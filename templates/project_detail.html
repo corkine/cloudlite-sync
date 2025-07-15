@@ -1,0 +1,372 @@
+{{define "content"}}
+<div class="px-4 mt-4 mb-3 sm:px-6 lg:px-8">
+  <!-- 项目信息 -->
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-4">
+    <div class="px-4 py-4 sm:px-6">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">项目信息</h3>
+      <p class="mt-1 max-w-2xl text-sm text-gray-500">项目详细信息和配置</p>
+    </div>
+    <div class="border-t border-gray-200">
+      <dl>
+        <div
+          class="bg-gray-50 px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6"
+        >
+          <dt class="text-sm font-medium text-gray-500">项目ID</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+            {{.Data.project.ID}}
+          </dd>
+        </div>
+        <div class="bg-white px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+          <dt class="text-sm font-medium text-gray-500">项目名称</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+            {{.Data.project.Name}}
+          </dd>
+        </div>
+        <div
+          class="bg-gray-50 px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6"
+        >
+          <dt class="text-sm font-medium text-gray-500">描述</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+            {{.Data.project.Description}}
+          </dd>
+        </div>
+        <div class="bg-white px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+          <dt class="text-sm font-medium text-gray-500">创建时间</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+            {{.Data.project.CreatedAt.Format "2006-01-02 15:04:05"}}
+          </dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+
+  <!-- 凭证管理 -->
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-4">
+    <div class="px-4 py-4 sm:px-6 flex justify-between items-center">
+      <div>
+        <h3 class="text-lg leading-6 font-medium text-gray-900">凭证管理</h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500">管理项目的访问凭证</p>
+      </div>
+      <form action="/credential/create" method="POST" class="inline">
+        <input type="hidden" name="project_id" value="{{.Data.project.ID}}" />
+        <button
+          type="submit"
+          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+        >
+          创建凭证
+        </button>
+      </form>
+    </div>
+    <div class="border-t border-gray-200">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Token
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              状态
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              创建时间
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              操作
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {{range .Data.credentials}}
+          <tr>
+            <td
+              class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900"
+            >
+              {{.Token}}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              {{if .IsActive}}
+              <span
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+              >
+                活跃
+              </span>
+              {{else}}
+              <span
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
+              >
+                停用
+              </span>
+              {{end}}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {{.CreatedAt.Format "2006-01-02 15:04:05"}}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <button
+                type="button"
+                class="text-blue-600 hover:text-blue-700 mr-4"
+                onclick="copyToken('{{.Token}}')"
+              >
+                复制
+              </button>
+              {{if .IsActive}}
+              <form
+                action="/credential/deactivate"
+                method="POST"
+                class="inline"
+              >
+                <input type="hidden" name="id" value="{{.ID}}" />
+                <input type="hidden" name="project_id" value="{{.ProjectID}}" />
+                <button
+                  type="submit"
+                  class="text-yellow-600 hover:text-yellow-900 mr-4"
+                >
+                  停用
+                </button>
+              </form>
+              {{else}}
+              <form action="/credential/activate" method="POST" class="inline">
+                <input type="hidden" name="id" value="{{.ID}}" />
+                <input type="hidden" name="project_id" value="{{.ProjectID}}" />
+                <button
+                  type="submit"
+                  class="text-green-600 hover:text-green-900 mr-4"
+                >
+                  激活
+                </button>
+              </form>
+              {{end}}
+              <form action="/credential/delete" method="POST" class="inline">
+                <input type="hidden" name="id" value="{{.ID}}" />
+                <input type="hidden" name="project_id" value="{{.ProjectID}}" />
+                <button
+                  type="submit"
+                  onclick="return confirm('确定要删除这个凭证吗？')"
+                  class="text-red-600 hover:text-red-900"
+                >
+                  删除
+                </button>
+              </form>
+            </td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 数据库版本 -->
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <div class="px-4 py-4 sm:px-6">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">数据库版本</h3>
+      <p class="mt-1 max-w-2xl text-sm text-gray-500">项目的数据库版本历史</p>
+      <!-- 上传表单 -->
+      <form
+        action="/project/upload_version"
+        method="POST"
+        enctype="multipart/form-data"
+        class="mb-1 flex flex-wrap items-center gap-2 mt-4"
+      >
+        <input type="hidden" name="project_id" value="{{.Data.project.ID}}" />
+        <label
+          class="flex items-center px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm cursor-pointer hover:bg-gray-50 transition"
+        >
+          <span class="text-sm text-gray-700 mr-2">选择文件</span>
+          <input type="file" name="database" required class="hidden" />
+        </label>
+        <input
+          type="text"
+          name="description"
+          placeholder="版本描述（可选）"
+          class="flex-1 min-w-[120px] border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <button
+          type="submit"
+          class="px-5 py-2 bg-blue-600 text-white rounded-md shadow hover:bg-blue-700 transition font-semibold text-sm"
+        >
+          <svg
+            class="inline w-4 h-4 mr-1 -mt-1"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
+            />
+          </svg>
+          上传数据库文件
+        </button>
+      </form>
+    </div>
+    <div class="border-t border-gray-200">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              版本
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              文件名
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              文件大小
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              描述
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              状态
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              创建时间
+            </th>
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              操作
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {{range .Data.versions}}
+          <tr>
+            <td
+              class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+            >
+              {{.Version}}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              {{.FileName}}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {{formatFileSize .FileSize}}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-500">{{.Description}}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              {{if .IsLatest}}
+              <span
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+              >
+                最新
+              </span>
+              {{else}}
+              <span
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+              >
+                历史
+              </span>
+              {{end}}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              {{.CreatedAt.Format "2006-01-02 15:04:05"}}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <!-- 下载按钮 -->
+              {{if .IsLatest}}
+              <a
+                href="/project/download?project_id={{.ProjectID}}&hash={{.FileHash}}"
+                class="text-blue-600 hover:text-blue-900 mr-2"
+                target="_blank"
+                >下载</a
+              >
+              <button
+                type="button"
+                class="text-blue-600 hover:text-gray-800 mr-2"
+                onclick="copyApiLink('{{.ProjectID}}', '', true)"
+              >
+                复制
+              </button>
+              {{else}}
+              <a
+                href="/project/download?project_id={{.ProjectID}}&hash={{.FileHash}}"
+                class="text-blue-600 hover:text-blue-900 mr-2"
+                target="_blank"
+                >下载</a
+              >
+              <button
+                type="button"
+                class="text-blue-600 hover:text-gray-800 mr-2"
+                onclick="copyApiLink('{{.ProjectID}}', '{{.FileHash}}', false)"
+              >
+                复制
+              </button>
+              {{end}}
+              <!-- 其他操作按钮... -->
+              <form
+                action="/project/delete_version"
+                method="POST"
+                style="display: inline"
+              >
+                <input type="hidden" name="id" value="{{.ID}}" />
+                <input type="hidden" name="project_id" value="{{.ProjectID}}" />
+                <button
+                  type="submit"
+                  onclick="return confirm('确定要删除该版本吗？')"
+                  class="text-red-600 hover:text-red-900"
+                >
+                  删除
+                </button>
+              </form>
+            </td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+  function copyApiLink(projectID, hash, isLatest) {
+    let token = prompt("请输入 API Token");
+    if (!token) return;
+    let url =
+      location.origin +
+      "/api/" +
+      projectID +
+      (isLatest ? "/latest" : "/" + hash) +
+      "?token=" +
+      encodeURIComponent(token);
+    navigator.clipboard.writeText(url).then(
+      function () {
+        alert("API下载链接已复制到剪贴板！");
+      },
+      function () {
+        alert("复制失败，请手动复制：" + url);
+      }
+    );
+  }
+  function copyToken(token) {
+    navigator.clipboard.writeText(token).then(
+      function () {
+        alert("密钥已复制到剪贴板！");
+      },
+      function () {
+        alert("复制失败，请手动复制：" + token);
+      }
+    );
+  }
+</script>
+{{end}}

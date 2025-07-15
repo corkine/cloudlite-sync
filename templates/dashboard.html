@@ -1,0 +1,204 @@
+{{define "content"}}
+<div x-data="projectDialog()" class="mt-6 px-4 pt-4 sm:px-6 lg:px-8">
+    <div class="sm:flex sm:items-center">
+        <div class="sm:flex-auto">
+            <h1 class="text-xl font-semibold text-gray-900">项目列表</h1>
+            <p class="mt-2 text-sm text-gray-700">
+                管理您的数据库同步项目
+            </p>
+        </div>
+        <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+            <button @click="openCreate()"
+               class="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto">
+                创建项目
+            </button>
+        </div>
+    </div>
+    
+    <div class="mt-4 flex flex-col">
+        <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+            <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+                <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-300">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">
+                                    项目ID
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">
+                                    项目名称
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">
+                                    描述
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">
+                                    创建时间
+                                </th>
+                                <th scope="col" class="relative px-6 py-3">
+                                    <span class="sr-only">操作</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {{range .Data}}
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {{.ID}}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {{.Name}}
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-500">
+                                    {{.Description}}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{.CreatedAt.Format "2006-01-02 15:04:05"}}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <a href="/project/detail?id={{.ID}}" class="text-blue-600 hover:text-blue-900 mr-4">详情</a>
+                                    <button @click="openEdit('{{.ID}}', '{{.Name}}', '{{.Description}}')" type="button" class="text-indigo-600 hover:text-indigo-900 mr-4">编辑</button>
+                                    <form action="/project/delete" method="POST" class="inline">
+                                        <input type="hidden" name="id" value="{{.ID}}">
+                                        <button type="submit" onclick="return confirm('确定要删除这个项目吗？')" 
+                                                class="text-red-600 hover:text-red-900">删除</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建项目 Dialog -->
+    <div x-show="showCreate" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30" style="display: none;">
+      <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-5">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-6">创建新项目</h3>
+        <form action="/project/create" method="POST">
+          <div class="space-y-6">
+            <div>
+              <label for="id" class="block text-sm font-medium text-gray-700">项目ID</label>
+              <div class="mt-1">
+                <input type="text" name="id" id="id"
+                  class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2"
+                  placeholder="请输入项目ID（可选，不填则自动生成）">
+              </div>
+            </div>
+            <div>
+              <label for="name" class="block text-sm font-medium text-gray-700">项目名称</label>
+              <div class="mt-1">
+                <input type="text" name="name" id="name" required
+                  class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2"
+                  placeholder="请输入项目名称">
+              </div>
+            </div>
+            <div>
+              <label for="description" class="block text-sm font-medium text-gray-700">项目描述</label>
+              <div class="mt-1">
+                <textarea name="description" id="description" rows="3"
+                  class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2"
+                  placeholder="请输入项目描述（可选）"></textarea>
+              </div>
+            </div>
+            <div class="flex justify-end space-x-3">
+              <button type="button" @click="closeCreate()"
+                class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                取消
+              </button>
+              <button type="submit"
+                class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                创建项目
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 编辑项目 Dialog -->
+    <div x-show="showEdit" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30" style="display: none;">
+      <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-5">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-6">编辑项目</h3>
+        <form action="/project/update" method="POST">
+          <input type="hidden" name="id" :value="editId">
+          <div class="space-y-6">
+            <div>
+              <label for="edit_name" class="block text-sm font-medium text-gray-700">项目名称</label>
+              <div class="mt-1">
+                <input type="text" name="name" id="edit_name" required
+                  x-model="editName"
+                  class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2"
+                  placeholder="请输入项目名称">
+              </div>
+            </div>
+            <div>
+              <label for="edit_description" class="block text-sm font-medium text-gray-700">项目描述</label>
+              <div class="mt-1">
+                <textarea name="description" id="edit_description" rows="3"
+                  x-model="editDescription"
+                  class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2"
+                  placeholder="请输入项目描述（可选）"></textarea>
+              </div>
+            </div>
+            <div class="flex justify-end space-x-3">
+              <button type="button" @click="closeEdit()"
+                class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                取消
+              </button>
+              <button type="submit"
+                class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                更新项目
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 分页 -->
+    {{if .Pagination}}
+    <div class="mt-2 p-2 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div class="text-gray-600 text-sm mb-2 sm:mb-0">
+            <span class="font-medium">{{.Pagination.CurrentPage}}</span> of <span class="font-medium">{{.Pagination.TotalPages}}</span> pages,
+            <span class="font-medium">{{.Pagination.TotalItems}}</span> items
+        </div>
+        <div>
+            {{if .Pagination.HasPrev}}
+            <a href="?page={{.Pagination.PrevPage}}" class="px-3 py-1 rounded mr-2 hover:bg-gray-100">Prev</a>
+            {{end}}
+            {{if .Pagination.HasNext}}
+            <a href="?page={{.Pagination.NextPage}}" class="px-3 py-1 rounded hover:bg-gray-100">Next</a>
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+</div>
+<script>
+function projectDialog() {
+  return {
+    showCreate: false,
+    showEdit: false,
+    editId: '',
+    editName: '',
+    editDescription: '',
+    openCreate() {
+      this.showCreate = true;
+    },
+    closeCreate() {
+      this.showCreate = false;
+    },
+    openEdit(id, name, description) {
+      this.editId = id;
+      this.editName = name;
+      this.editDescription = description;
+      this.showEdit = true;
+    },
+    closeEdit() {
+      this.showEdit = false;
+    }
+  }
+}
+</script>
+{{end}} 

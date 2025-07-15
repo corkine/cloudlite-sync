@@ -1,0 +1,123 @@
+{{define "content"}}
+<div class="container mx-auto px-4 py-8">
+  <h1 class="text-2xl font-bold mb-2">集成帮助</h1>
+  <p class="mb-6 text-gray-700">
+    本页面为开发者提供如何通过 API 上传和下载 SQLite 数据库的示例，支持
+    curl、Go、Clojure、JavaScript、TypeScript 等多种语言。
+  </p>
+  <h2 class="text-xl font-semibold mt-8 mb-1">API 说明</h2>
+  <ul class="list-none pl-0 mb-6 text-gray-700">
+    <li>
+      <b>上传数据库：</b>
+      <code>POST /api/{project}</code>
+      ，form-data 参数：<code>token</code>（凭证）、<code>description</code>（版本描述，可选）、<code>database</code>（数据库文件）
+    </li>
+    <li>
+      <b>下载数据库：</b>
+      <code>GET /api/{project}/latest?token=YOUR_TOKEN</code>
+      ，参数：<code>project</code>（项目名）、<code>token</code>（凭证）
+    </li>
+    <li>
+      <b>下载数据库：</b>
+      <code>GET /api/{project}/{hash}?token=YOUR_TOKEN</code>
+      ，参数：<code>project</code>（项目名）、<code>hash</code>（版本哈希）、<code>token</code>（凭证）
+    </li>
+  </ul>
+  <h2 class="text-xl font-semibold mt-8 mb-2">curl 示例</h2>
+  <pre class="bg-gray-100 rounded p-4 overflow-x-auto text-sm mb-6"><code># 上传数据库
+curl -X POST "http://your-server/api/your_project" \
+  -F "token=YOUR_TOKEN" \
+  -F "description=本次更新说明（可选）" \
+  -F "database=@data.db"
+
+# 下载最新数据库
+curl -o data.db "http://your-server/api/your_project/latest?token=YOUR_TOKEN"
+
+# 下载指定版本数据库
+curl -o data.db "http://your-server/api/your_project/{hash}?token=YOUR_TOKEN"
+</code></pre>
+  <h2 class="text-xl font-semibold mt-8 mb-2">Go 示例</h2>
+  <pre class="bg-gray-100 rounded p-4 overflow-x-auto text-sm mb-6"><code>package main
+import (
+  "bytes"
+  "io"
+  "mime/multipart"
+  "net/http"
+  "os"
+)
+func uploadDB() {
+  file, _ := os.Open("data.db")
+  defer file.Close()
+  body := &bytes.Buffer{}
+  writer := multipart.NewWriter(body)
+  writer.WriteField("token", "YOUR_TOKEN")
+  writer.WriteField("description", "本次更新说明（可选）")
+  part, _ := writer.CreateFormFile("database", "data.db")
+  io.Copy(part, file)
+  writer.Close()
+  req, _ := http.NewRequest("POST", "http://your-server/api/your_project", body)
+  req.Header.Set("Content-Type", writer.FormDataContentType())
+  http.DefaultClient.Do(req)
+}
+func downloadLatestDB() {
+  resp, _ := http.Get("http://your-server/api/your_project/latest?token=YOUR_TOKEN")
+  out, _ := os.Create("data.db")
+  io.Copy(out, resp.Body)
+  resp.Body.Close()
+  out.Close()
+}
+func downloadVersionDB(hash string) {
+  url := "http://your-server/api/your_project/" + hash + "?token=YOUR_TOKEN"
+  resp, _ := http.Get(url)
+  out, _ := os.Create("data.db")
+  io.Copy(out, resp.Body)
+  resp.Body.Close()
+  out.Close()
+}
+</code></pre>
+  <h2 class="text-xl font-semibold mt-8 mb-2">Clojure 示例</h2>
+  <pre class="bg-gray-100 rounded p-4 overflow-x-auto text-sm mb-6"><code>(ns example
+  (:require [clj-http.client :as client]
+            [clojure.java.io :as io]))
+;; 上传数据库
+(client/post "http://your-server/api/your_project"
+  {:multipart [{:name "token" :content "YOUR_TOKEN"}
+               {:name "description" :content "本次更新说明（可选）"}
+               {:name "database" :content (io/file "data.db")}]})
+;; 下载最新数据库
+(with-open [in (client/get "http://your-server/api/your_project/latest?token=YOUR_TOKEN" {:as :stream})
+            out (io/output-stream "data.db")]
+  (io/copy (:body in) out))
+;; 下载指定版本数据库
+(with-open [in (client/get "http://your-server/api/your_project/{hash}?token=YOUR_TOKEN" {:as :stream})
+            out (io/output-stream "data.db")]
+  (io/copy (:body in) out))
+</code></pre>
+  <h2 class="text-xl font-semibold mt-8 mb-2">TypeScript 示例 (Node.js)</h2>
+  <pre class="bg-gray-100 rounded p-4 overflow-x-auto text-sm mb-6"><code>import fs from 'fs';
+import axios from 'axios';
+import FormData from 'form-data';
+// 上传数据库
+const form = new FormData();
+form.append('token', 'YOUR_TOKEN');
+form.append('description', '本次更新说明（可选）');
+form.append('database', fs.createReadStream('data.db'));
+axios.post('http://your-server/api/your_project', form, {
+  headers: form.getHeaders()
+});
+// 下载最新数据库
+axios.get('http://your-server/api/your_project/latest?token=YOUR_TOKEN', { responseType: 'stream' })
+  .then(res => {
+    res.data.pipe(fs.createWriteStream('data.db'));
+  });
+// 下载指定版本数据库
+axios.get('http://your-server/api/your_project/{hash}?token=YOUR_TOKEN', { responseType: 'stream' })
+  .then(res => {
+    res.data.pipe(fs.createWriteStream('data.db'));
+  });
+</code></pre>
+  <div class="mt-8 text-gray-500 text-sm">
+    如需更多语言示例或有其他问题，请联系维护者。
+  </div>
+</div>
+{{end}}
