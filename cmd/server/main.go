@@ -20,6 +20,10 @@ func main() {
 	// 加载配置
 	cfg := config.Load()
 
+	// 读取 APP_VERSION 环境变量
+	appVersion := os.Getenv("APP_VERSION")
+	log.Printf("APP_VERSION: %s", appVersion)
+
 	// 确保 data 目录存在
 	if err := os.MkdirAll("data", 0755); err != nil {
 		log.Fatalf("Failed to create data directory: %v", err)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"html/template"
 	"net/http"
+	"os"
 
 	"chchma.com/cloudlite-sync/internal/utils"
 )
@@ -69,6 +70,7 @@ type PageData struct {
 	Error      string
 	Success    string
 	Pagination *PaginationData
+	Version    string
 }
 
 type PaginationData struct {
@@ -85,8 +87,9 @@ type PaginationData struct {
 // NewPageData 创建新的页面数据
 func NewPageData(title string, data interface{}) *PageData {
 	return &PageData{
-		Title: title,
-		Data:  data,
+		Title:   title,
+		Data:    data,
+		Version: os.Getenv("APP_VERSION"),
 	}
 }
 

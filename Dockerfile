@@ -17,6 +17,8 @@ RUN go mod download
 COPY . .
 
 # 构建可执行文件
+ARG APP_VERSION=latest
+ENV APP_VERSION=${APP_VERSION}
 RUN go build -o cloudlitesync ./cmd/server/main.go
 
 # 生产环境镜像
