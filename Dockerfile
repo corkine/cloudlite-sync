@@ -17,14 +17,14 @@ RUN go mod download
 COPY . .
 
 # 构建可执行文件
-ARG APP_VERSION=latest
-ENV APP_VERSION=${APP_VERSION}
 RUN go build -o cloudlitesync ./cmd/server/main.go
 
 # 生产环境镜像
 FROM alpine:latest
 WORKDIR /app
 
+ARG APP_VERSION=latest
+ENV APP_VERSION=${APP_VERSION}
 # 安装 ca-certificates 以支持 https
 RUN apk add --no-cache ca-certificates
 
