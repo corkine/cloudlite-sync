@@ -19,8 +19,13 @@
     </li>
     <li>
       <b>下载数据库：</b>
-      <code>GET /api/{project}/{hash}?token=YOUR_TOKEN</code>
-      ，参数：<code>project</code>（项目名）、<code>hash</code>（版本哈希）、<code>token</code>（凭证）
+      <code>GET /api/{project}/{file_hash}?token=YOUR_TOKEN</code>
+      ，参数：<code>project</code>（项目名）、<code>file_hash</code>（文件哈希）、<code>token</code>（凭证）
+    </li>
+    <li>
+      <b>检查数据库：</b>
+      <code>GET /api/{project}/info/{file_hash}?token=YOUR_TOKEN</code>
+      ，参数：<code>project</code>（项目名）、<code>file_hash</code>（文件哈希）、<code>token</code>（凭证）
     </li>
   </ul>
   <h2 class="text-xl font-semibold mt-8 mb-2">curl 示例</h2>
@@ -123,36 +128,60 @@ import 'package:http/http.dart' as http;
 const url = 'http://your-server/api/your_project';
 const token = 'YOUR_TOKEN';
 
-// 下载最新数据库
-Future<void> tryDownloadRemoteDb({required String localPath}) async {
-  final downloadUrl = '$url/latest?token=$token';
+Future<void> checkAndDownloadRemoteDb({required String dbPath}) async {
+  final dbFile = File(dbPath);
+  if (await dbFile.exists()) {
+    final bytes = await dbFile.readAsBytes();
+    final hash = md5.convert(bytes).toString();
+    final infoUrl = '$url/info/$hash?token=$token';
+    logger.info('检查远程数据库版本: $infoUrl');
+    final infoResp = await http.get(Uri.parse(infoUrl));
+    if (infoResp.statusCode == 404) {
+      logger.info('远程未找到该版本，存在不同步数据，准备上传...');
+      await uploadDatabaseBackup(dbPath: dbPath);
+      logger.info('上传完成，跳过下载');
+      return;
+    }
+  }
+  logger.info('当前数据库不存在或存在于备份中，从云端下载最新版本');
+  const downloadUrl = '$url/latest?token=$token';
   final response = await http.get(Uri.parse(downloadUrl));
   if (response.statusCode == 200) {
-    final file = File(localPath);
+    final file = File(dbPath);
     await file.writeAsBytes(response.bodyBytes);
-    print('远程数据库下载成功，已保存到: $localPath');
+    logger.info('远程数据库下载成功，已保存到: $dbPath');
   } else {
-    print('远程数据库下载失败，状态码: ${response.statusCode}');
+    logger.warning('远程数据库下载失败，状态码: ${response.statusCode}');
   }
 }
 
-// 上传数据库
-Future<void> uploadDatabaseBackup(String dbPath) async {
+Future<void> uploadDatabaseBackup({required String dbPath}) async {
   final dbFile = File(dbPath);
   if (!dbFile.existsSync()) {
-    print('本地数据库文件不存在，无法上传');
+    logger.warning('本地数据库文件不存在，无法上传');
     return;
   }
   final request = http.MultipartRequest('POST', Uri.parse(url))
-    ..fields['token'] = token
-    ..fields['description'] = 'Upload at ${DateTime.now()}'
-    ..files.add(await http.MultipartFile.fromPath('database', dbFile.path));
-  final response = await request.send();
-  if (response.statusCode == 200) {
-    print('数据库备份上传成功');
-  } else {
-    final body = await response.stream.bytesToString();
-    print('数据库备份上传失败: $body');
+    ..fields['token'] = token;
+  request.fields['description'] = 'Upload at ${DateTime.now()}';
+  request.files.add(
+    await http.MultipartFile.fromPath('database', dbFile.path),
+  );
+  try {
+    final response = await request.send();
+    if (response.statusCode == 200) {
+      logger.info('数据库备份上传成功');
+    } else {
+      logger.warning('数据库备份上传失败: ${response.statusCode}');
+      final body = await response.stream.bytesToString();
+      if (body.contains('File already exists')) {
+        logger.info('数据库未更改，跳过上传');
+      } else {
+        logger.warning('数据库备份上传失败: $body');
+      }
+    }
+  } catch (e, stackTrace) {
+    logger.warning('数据库备份上传异常: $e', e, stackTrace);
   }
 }
 

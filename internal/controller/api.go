@@ -254,7 +254,8 @@ func (h *Handler) ApiGetVersionInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token := r.URL.Query().Get("token")
-	version := r.URL.Query().Get("version")
+	projectID := chi.URLParam(r, "projectID")
+	hash := chi.URLParam(r, "hash")
 
 	if token == "" {
 		http.Error(w, "Token is required", http.StatusBadRequest)
@@ -267,23 +268,19 @@ func (h *Handler) ApiGetVersionInfo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to validate token", http.StatusInternalServerError)
 		return
 	}
-	if credential == nil {
+	if credential == nil || credential.ProjectID != projectID {
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return
 	}
 
 	var dbVersion *models.DatabaseVersion
 
-	if version == "" {
+	if hash == "latest" {
 		// 获取最新版本信息
 		dbVersion, err = h.db.GetLatestVersion(credential.ProjectID)
 	} else {
 		// 获取指定版本信息
-		dbVersion, err = h.db.GetDatabaseVersion(version)
-		if dbVersion != nil && dbVersion.ProjectID != credential.ProjectID {
-			http.Error(w, "Version not found", http.StatusNotFound)
-			return
-		}
+		dbVersion, err = h.db.GetVersionByHash(projectID, hash)
 	}
 
 	if err != nil {

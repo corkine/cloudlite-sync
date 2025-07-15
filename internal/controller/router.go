@@ -72,6 +72,7 @@ func NewRouter(cfg *config.Config, db *database.DB, ossClient *oss.OSSClient) *c
 		r.Get("/{projectID}/latest", handler.ApiDownloadLatest)
 		r.Get("/{projectID}/{hash}", handler.ApiDownloadByHash)
 		r.Get("/{projectID}/versions", handler.ApiListVersions)
+		r.Get("/{projectID}/info/{hash}", handler.ApiGetVersionInfo)
 	})
 	return r
 }
