@@ -297,7 +297,14 @@
                 class="text-blue-600 hover:text-gray-800 mr-2"
                 onclick="copyApiLink('{{.ProjectID}}', '', true)"
               >
-                复制
+                地址
+              </button>
+              <button
+                type="button"
+                class="text-blue-600 hover:text-gray-800 mr-2"
+                onclick="copyHash('{{.FileHash}}')"
+              >
+                哈希
               </button>
               {{else}}
               <a
@@ -311,7 +318,14 @@
                 class="text-blue-600 hover:text-gray-800 mr-2"
                 onclick="copyApiLink('{{.ProjectID}}', '{{.FileHash}}', false)"
               >
-                复制
+                地址
+              </button>
+              <button
+                type="button"
+                class="text-blue-600 hover:text-gray-800 mr-2"
+                onclick="copyHash('{{.FileHash}}')"
+              >
+                哈希
               </button>
               {{end}}
               <!-- 其他操作按钮... -->
@@ -355,6 +369,16 @@
       },
       function () {
         alert("复制失败，请手动复制：" + url);
+      }
+    );
+  }
+  function copyHash(hash) {
+    navigator.clipboard.writeText(hash).then(
+      function () {
+        alert("文件哈希已复制到剪贴板！");
+      },
+      function () {
+        alert("复制失败，请手动复制：" + hash);
       }
     );
   }
