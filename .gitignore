@@ -4,9 +4,6 @@ cloudlitesync
 *.out
 *.test
 
-# 依赖缓存
-go.sum
-
 # 数据库和本地数据
 /data.db
 /data/
