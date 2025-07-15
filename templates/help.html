@@ -192,6 +192,10 @@ ProcessSignal.sigint.watch().listen((signal) async {
   await uploadDatabaseBackup(dbPath);
   exit(0);
 });
+ProcessSignal.sigterm.watch().listen((signal) async {
+  await uploadDatabaseBackup(dbPath);
+  exit(0);
+});
 </code></pre>
   <div class="mt-8 text-gray-500 text-sm">
     如需更多语言示例或有其他问题，请联系维护者。
