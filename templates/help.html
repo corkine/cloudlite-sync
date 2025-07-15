@@ -130,20 +130,23 @@ const token = 'YOUR_TOKEN';
 
 Future<void> checkAndDownloadRemoteDb({required String dbPath}) async {
   final dbFile = File(dbPath);
-  if (await dbFile.exists()) {
+  final exist = await dbFile.exists();
+  if (exist) {
     final bytes = await dbFile.readAsBytes();
     final hash = md5.convert(bytes).toString();
     final infoUrl = '$url/info/$hash?token=$token';
     logger.info('检查远程数据库版本: $infoUrl');
     final infoResp = await http.get(Uri.parse(infoUrl));
     if (infoResp.statusCode == 404) {
-      logger.info('远程未找到该版本，存在不同步数据，准备上传...');
-      await uploadDatabaseBackup(dbPath: dbPath);
-      logger.info('上传完成，跳过下载');
+      logger.info('远程未找到该版本，存在数据不同步，跳过下载...');
       return;
     }
   }
-  logger.info('当前数据库不存在或存在于备份中，从云端下载最新版本');
+  if (!exist) {
+    logger.info('当前数据库不存在，从云端下载最新版本');
+  } else {
+    logger.info('当前数据库存在于备份中，从云端下载最新版本');
+  }
   const downloadUrl = '$url/latest?token=$token';
   final response = await http.get(Uri.parse(downloadUrl));
   if (response.statusCode == 200) {
