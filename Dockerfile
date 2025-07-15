@@ -28,6 +28,12 @@ WORKDIR /app
 # 安装 ca-certificates 以支持 https
 RUN apk add --no-cache ca-certificates
 
+# 安装 tzdata 并设置时区为 Asia/Shanghai
+RUN apk add --no-cache tzdata \
+    && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+    && echo "Asia/Shanghai" > /etc/timezone
+ENV TZ=Asia/Shanghai
+
 # 拷贝编译好的二进制文件
 COPY --from=builder /app/cloudlitesync .
 
