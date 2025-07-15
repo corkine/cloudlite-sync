@@ -116,6 +116,51 @@ axios.get('http://your-server/api/your_project/{hash}?token=YOUR_TOKEN', { respo
     res.data.pipe(fs.createWriteStream('data.db'));
   });
 </code></pre>
+  <h2 class="text-xl font-semibold mt-8 mb-2">Dart 示例</h2>
+  <pre class="bg-gray-100 rounded p-4 overflow-x-auto text-sm mb-6"><code>import 'dart:io';
+import 'package:http/http.dart' as http;
+
+const url = 'http://your-server/api/your_project';
+const token = 'YOUR_TOKEN';
+
+// 下载最新数据库
+Future<void> tryDownloadRemoteDb({required String localPath}) async {
+  final downloadUrl = '$url/latest?token=$token';
+  final response = await http.get(Uri.parse(downloadUrl));
+  if (response.statusCode == 200) {
+    final file = File(localPath);
+    await file.writeAsBytes(response.bodyBytes);
+    print('远程数据库下载成功，已保存到: $localPath');
+  } else {
+    print('远程数据库下载失败，状态码: ${response.statusCode}');
+  }
+}
+
+// 上传数据库
+Future<void> uploadDatabaseBackup(String dbPath) async {
+  final dbFile = File(dbPath);
+  if (!dbFile.existsSync()) {
+    print('本地数据库文件不存在，无法上传');
+    return;
+  }
+  final request = http.MultipartRequest('POST', Uri.parse(url))
+    ..fields['token'] = token
+    ..fields['description'] = 'Upload at ${DateTime.now()}'
+    ..files.add(await http.MultipartFile.fromPath('database', dbFile.path));
+  final response = await request.send();
+  if (response.statusCode == 200) {
+    print('数据库备份上传成功');
+  } else {
+    final body = await response.stream.bytesToString();
+    print('数据库备份上传失败: $body');
+  }
+}
+
+ProcessSignal.sigint.watch().listen((signal) async {
+  await uploadDatabaseBackup(dbPath);
+  exit(0);
+});
+</code></pre>
   <div class="mt-8 text-gray-500 text-sm">
     如需更多语言示例或有其他问题，请联系维护者。
   </div>
