@@ -35,13 +35,6 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	h.tmpl.Render(w, "dashboard.html", data)
 }
 
-// CreateProjectPage 显示创建项目页面
-func (h *Handler) CreateProjectPage(w http.ResponseWriter, r *http.Request) {
-	data := template.NewPageData("创建项目", nil)
-	data.SetUser(session.GetUsername(r))
-	h.tmpl.Render(w, "create_project.html", data)
-}
-
 // CreateProject 创建项目
 func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -117,30 +110,6 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
-}
-
-// EditProjectPage 显示编辑项目页面
-func (h *Handler) EditProjectPage(w http.ResponseWriter, r *http.Request) {
-	projectID := r.URL.Query().Get("id")
-	if projectID == "" {
-		http.Error(w, "Project ID is required", http.StatusBadRequest)
-		return
-	}
-
-	project, err := h.db.GetProject(projectID)
-	if err != nil {
-		http.Error(w, "Failed to get project", http.StatusInternalServerError)
-		return
-	}
-
-	if project == nil {
-		http.Error(w, "Project not found", http.StatusNotFound)
-		return
-	}
-
-	data := template.NewPageData("编辑项目", project)
-	data.SetUser(session.GetUsername(r))
-	h.tmpl.Render(w, "edit_project.html", data)
 }
 
 // UpdateProject 更新项目

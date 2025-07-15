@@ -50,9 +50,7 @@ func NewRouter(cfg *config.Config, db *database.DB, ossClient *oss.OSSClient) *c
 
 		// 项目管理
 		r.Get("/", handler.Dashboard)
-		r.Get("/project/create", handler.CreateProjectPage)
 		r.Post("/project/create", handler.CreateProject)
-		r.Get("/project/edit", handler.EditProjectPage)
 		r.Post("/project/update", handler.UpdateProject)
 		r.Post("/project/delete", handler.DeleteProject)
 		r.Get("/project/detail", handler.ProjectDetail)
