@@ -187,11 +187,12 @@ func (db *DB) DeleteDatabaseVersion(id string) error {
 	}
 	defer tx.Rollback()
 
-	// 检查是否是最新版本
+	// 先获取版本信息，包括项目ID和是否是最新版本
+	var projectID string
 	var isLatest bool
-	err = tx.QueryRow(`SELECT is_latest FROM database_versions WHERE id = ?`, id).Scan(&isLatest)
+	err = tx.QueryRow(`SELECT project_id, is_latest FROM database_versions WHERE id = ?`, id).Scan(&projectID, &isLatest)
 	if err != nil {
-		return fmt.Errorf("failed to check if version is latest: %w", err)
+		return fmt.Errorf("failed to get version info: %w", err)
 	}
 
 	// 删除版本
@@ -202,13 +203,24 @@ func (db *DB) DeleteDatabaseVersion(id string) error {
 
 	// 如果删除的是最新版本，设置最近创建的版本为最新
 	if isLatest {
-		_, err = tx.Exec(`UPDATE database_versions SET is_latest = 1 
-						  WHERE id = (SELECT id FROM database_versions 
-						  WHERE project_id = (SELECT project_id FROM database_versions WHERE id = ?) 
-						  ORDER BY created_at DESC LIMIT 1)`, id)
+		// 检查是否还有其他版本
+		var count int
+		err = tx.QueryRow(`SELECT COUNT(*) FROM database_versions WHERE project_id = ?`, projectID).Scan(&count)
 		if err != nil {
-			return fmt.Errorf("failed to update latest version: %w", err)
+			return fmt.Errorf("failed to count remaining versions: %w", err)
 		}
+
+		// 如果还有其他版本，设置最近创建的版本为最新
+		if count > 0 {
+			_, err = tx.Exec(`UPDATE database_versions SET is_latest = 1 
+							  WHERE id = (SELECT id FROM database_versions 
+							  WHERE project_id = ? 
+							  ORDER BY created_at DESC LIMIT 1)`, projectID)
+			if err != nil {
+				return fmt.Errorf("failed to update latest version: %w", err)
+			}
+		}
+		// 如果没有其他版本，不需要设置最新版本（项目将没有最新版本）
 	}
 
 	// 提交事务
