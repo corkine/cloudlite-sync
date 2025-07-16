@@ -1,35 +1,108 @@
 {{define "content"}}
 <div class="max-w-7xl w-full mx-auto px-4 py-8">
   <h1 class="text-2xl font-bold mb-2">集成帮助</h1>
-  <p class="mb-6 text-gray-700">
-    本页面为开发者提供如何通过 API 上传和下载 SQLite 数据库的示例，支持
-    curl、Go、Clojure、JavaScript、TypeScript 等多种语言。
+  <p class="text-gray-700 mt-4 mb-4">
+    CloudLiteSync 提供了一种简便易行的最佳实践来满足各种复杂场景。
   </p>
-  <h2 class="text-xl font-semibold mt-8 mb-1">API 说明</h2>
-  <ul class="list-none pl-0 mb-6 text-gray-700">
-    <li>
-      <b>上传数据库：</b>
-      <code>POST /api/{project}</code>
-      ，form-data 参数：<code>token</code>（凭证）、<code>description</code>（版本描述，可选）、<code>database</code>（数据库文件）
-    </li>
-    <li>
-      <b>下载数据库：</b>
-      <code>GET /api/{project}/latest?token=YOUR_TOKEN</code>
-      ，参数：<code>project</code>（项目名）、<code>token</code>（凭证）
-    </li>
-    <li>
-      <b>下载数据库：</b>
-      <code>GET /api/{project}/{file_hash}?token=YOUR_TOKEN</code>
-      ，参数：<code>project</code>（项目名）、<code>file_hash</code>（文件哈希）、<code>token</code>（凭证）
-    </li>
-    <li>
-      <b>检查数据库：</b>
-      <code>GET /api/{project}/info/{file_hash}?token=YOUR_TOKEN</code>
-      ，参数：<code>project</code>（项目名）、<code>file_hash</code>（文件哈希）、<code>token</code>（凭证）
-    </li>
-  </ul>
-  <h2 class="text-xl font-semibold mt-8 mb-2">curl 示例</h2>
-  <pre class="bg-gray-100 rounded p-4 overflow-x-auto text-sm mb-6"><code># 上传数据库
+  <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-4 mb-6" role="alert">
+    <p class="text-xl font-bold">最佳实践</p>
+    <ul class="list-none pl-0 mt-2">
+      <li><strong>启动时：</strong> 如果本地数据库文件不存在，则从云端拉取最新版本。</li>
+      <li><strong>关闭时：</strong> 如果当前不是 "Debug" 模式，则将本地数据库上传到云端。</li>
+    </ul>
+  </div>
+  <div class="space-y-4 text-gray-700">
+    <div>
+      <h4 class="font-semibold mb-1">传统主机备份</h4>
+      <p>
+        在生产服务器上运行时，您的应用程序永远不会处于 "Debug" 模式。因此，每次服务正常重启或关闭时（通过捕获 <code>SIGTERM</code>/<code>SIGINT</code> 信号），都会自动触发上传，将最新的数据状态安全地备份到云端。这天然地实现了“关机即备份”的可靠性保障。
+      </p>
+    </div>
+    <div>
+      <h4 class="font-semibold mb-1">Serverless 高效利用</h4>
+      <p>
+        这个逻辑完美契合 Serverless 环境。当一个新的函数实例冷启动时，其本地环境是空的，因此会触发“启动时拉取”规则，快速获取状态。函数实例在被回收前，会触发关机信号，由于它不是 "Debug" 模式，会自动上传最新的数据状态，为下一个实例做好准备。
+      </p>
+    </div>
+    <div>
+      <h4 class="font-semibold mb-1">开发生产同步与隔离</h4>
+      <p>
+        这个流程极大地提升了开发体验和安全性。
+        <ul class="list-none pl-0 mt-1 space-y-1">
+          <li>
+            <strong>同步：</strong> 开发者初次在本地启动项目时，由于数据库文件为空，会自动拉取生产环境的最新数据，瞬间创建一个高保真的开发环境。
+          </li>
+          <li>
+            <strong>隔离：</strong> 开发者在本地以 "Debug" 模式运行程序。根据规则，此模式下关闭时不会上传数据。这从机制上保证了本地的任何实验性修改都不会污染生产数据，提供了一个绝对安全的开发沙盒。
+          </li>
+        </ul>
+      </p>
+    </div>
+  </div>
+  
+  <p class="mt-8 mb-4 text-gray-700">
+    下面提供了通过 REST API 和编程语言集成 CloudLiteSync 的示例。
+  </p>
+  <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-4 mb-6" role="alert">
+    <h2 class="text-xl font-semibold mb-2">API 说明</h2>
+    <ul class="list-none pl-0 ">
+      <li>
+        <b>上传数据库：</b>
+        <code>POST /api/{project}</code>
+        ，form-data 参数：<code>token</code>（凭证）、<code>description</code>（版本描述，可选）、<code>database</code>（数据库文件）
+      </li>
+      <li>
+        <b>下载数据库：</b>
+        <code>GET /api/{project}/latest?token=YOUR_TOKEN</code>
+        ，参数：<code>project</code>（项目名）、<code>token</code>（凭证）
+      </li>
+      <li>
+        <b>下载数据库：</b>
+        <code>GET /api/{project}/{file_hash}?token=YOUR_TOKEN</code>
+        ，参数：<code>project</code>（项目名）、<code>file_hash</code>（文件哈希）、<code>token</code>（凭证）
+      </li>
+      <li>
+        <b>检查数据库：</b>
+        <code>GET /api/{project}/info/{file_hash}?token=YOUR_TOKEN</code>
+        ，参数：<code>project</code>（项目名）、<code>file_hash</code>（文件哈希）、<code>token</code>（凭证）
+      </li>
+    </ul>
+  </div>
+
+  <div x-data="{ 
+    showCurl: false, 
+    showGo: false, 
+    showClojure: false, 
+    showTypeScript: false, 
+    showDart: false 
+  }" class="mb-8">
+    <h2 class="text-xl font-semibold mt-8 mb-4">编程语言示例</h2>
+    <div class="flex flex-wrap gap-3 mb-6">
+      <button @click="showCurl = true" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-sm">
+        <span class="mr-2">📋</span>curl
+      </button>
+      <button @click="showGo = true" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-sm">
+        <span class="mr-2">🐹</span>Go
+      </button>
+      <button @click="showClojure = true" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-sm">
+        <span class="mr-2">☕</span>Clojure
+      </button>
+      <button @click="showTypeScript = true" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-sm">
+        <span class="mr-2">📘</span>TypeScript
+      </button>
+      <button @click="showDart = true" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-sm">
+        <span class="mr-2">🎯</span>Dart
+      </button>
+    </div>
+    
+    <!-- curl 弹窗 -->
+    <div x-show="showCurl" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto scrollbar-hide">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-semibold">📋 curl 示例</h3>
+          <button @click="showCurl = false" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        </div>
+        <pre class="bg-gray-100 rounded p-4 overflow-x-auto text-sm"><code># 上传数据库
 curl -X POST "http://your-server/api/your_project" \
   -F "token=YOUR_TOKEN" \
   -F "description=本次更新说明（可选）" \
@@ -39,164 +112,343 @@ curl -X POST "http://your-server/api/your_project" \
 curl -o data.db "http://your-server/api/your_project/latest?token=YOUR_TOKEN"
 
 # 下载指定版本数据库
-curl -o data.db "http://your-server/api/your_project/{hash}?token=YOUR_TOKEN"
-</code></pre>
-  <h2 class="text-xl font-semibold mt-8 mb-2">Go 示例</h2>
-  <pre class="bg-gray-100 rounded p-4 overflow-x-auto text-sm mb-6"><code>package main
+curl -o data.db "http://your-server/api/your_project/{hash}?token=YOUR_TOKEN"</code></pre>
+      </div>
+    </div>
+    
+    <!-- Go 弹窗 -->
+    <div x-show="showGo" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto scrollbar-hide">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-semibold">🐹 Go 示例</h3>
+          <button @click="showGo = false" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        </div>
+        <pre class="bg-gray-100 rounded p-4 overflow-x-auto text-sm"><code>package main
 import (
   "bytes"
+  "fmt"
   "io"
   "mime/multipart"
   "net/http"
   "os"
+  "os/signal"
+  "syscall"
+  "time"
 )
-func uploadDB() {
-  file, _ := os.Open("data.db")
+
+const (
+  serverURL = "http://your-server/api/your_project"
+  token     = "YOUR_TOKEN"
+  dbPath    = "data.db"
+)
+
+func downloadLatestDB() error {
+  resp, err := http.Get(serverURL + "/latest?token=" + token)
+  if err != nil {
+    return err
+  }
+  defer resp.Body.Close()
+  
+  out, err := os.Create(dbPath)
+  if err != nil {
+    return err
+  }
+  defer out.Close()
+  
+  _, err = io.Copy(out, resp.Body)
+  return err
+}
+
+func uploadDB() error {
+  file, err := os.Open(dbPath)
+  if err != nil {
+    return err
+  }
   defer file.Close()
+  
   body := &bytes.Buffer{}
   writer := multipart.NewWriter(body)
-  writer.WriteField("token", "YOUR_TOKEN")
-  writer.WriteField("description", "本次更新说明（可选）")
-  part, _ := writer.CreateFormFile("database", "data.db")
+  writer.WriteField("token", token)
+  writer.WriteField("description", "Upload at "+time.Now().Format("2006-01-02 15:04:05"))
+  part, err := writer.CreateFormFile("database", "data.db")
+  if err != nil {
+    return err
+  }
   io.Copy(part, file)
   writer.Close()
-  req, _ := http.NewRequest("POST", "http://your-server/api/your_project", body)
+  
+  req, err := http.NewRequest("POST", serverURL, body)
+  if err != nil {
+    return err
+  }
   req.Header.Set("Content-Type", writer.FormDataContentType())
-  http.DefaultClient.Do(req)
+  
+  resp, err := http.DefaultClient.Do(req)
+  if err != nil {
+    return err
+  }
+  defer resp.Body.Close()
+  return nil
 }
-func downloadLatestDB() {
-  resp, _ := http.Get("http://your-server/api/your_project/latest?token=YOUR_TOKEN")
-  out, _ := os.Create("data.db")
-  io.Copy(out, resp.Body)
-  resp.Body.Close()
-  out.Close()
-}
-func downloadVersionDB(hash string) {
-  url := "http://your-server/api/your_project/" + hash + "?token=YOUR_TOKEN"
-  resp, _ := http.Get(url)
-  out, _ := os.Create("data.db")
-  io.Copy(out, resp.Body)
-  resp.Body.Close()
-  out.Close()
-}
-</code></pre>
-  <h2 class="text-xl font-semibold mt-8 mb-2">Clojure 示例</h2>
-  <pre class="bg-gray-100 rounded p-4 overflow-x-auto text-sm mb-6"><code>(ns example
+
+func main() {
+  if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+    fmt.Println("数据库文件不存在，从云端下载最新版本...")
+    if err := downloadLatestDB(); err != nil {
+      fmt.Printf("下载失败: %v\n", err)
+    } else {
+      fmt.Println("下载成功")
+    }
+  }
+  
+  sigChan := make(chan os.Signal, 1)
+  signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+  
+  go func() {
+    <-sigChan
+    fmt.Println("接收到关闭信号，准备上传数据库...")
+    if err := uploadDB(); err != nil {
+      fmt.Printf("上传失败: %v\n", err)
+    } else {
+      fmt.Println("上传成功")
+    }
+    os.Exit(0)
+  }()
+}</code></pre>
+      </div>
+    </div>
+    
+    <!-- Clojure 弹窗 -->
+    <div x-show="showClojure" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto scrollbar-hide">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-semibold">☕ Clojure 示例</h3>
+          <button @click="showClojure = false" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        </div>
+        <pre class="bg-gray-100 rounded p-4 overflow-x-auto text-sm"><code>(ns example
   (:require [clj-http.client :as client]
-            [clojure.java.io :as io]))
-;; 上传数据库
-(client/post "http://your-server/api/your_project"
-  {:multipart [{:name "token" :content "YOUR_TOKEN"}
-               {:name "description" :content "本次更新说明（可选）"}
-               {:name "database" :content (io/file "data.db")}]})
-;; 下载最新数据库
-(with-open [in (client/get "http://your-server/api/your_project/latest?token=YOUR_TOKEN" {:as :stream})
-            out (io/output-stream "data.db")]
-  (io/copy (:body in) out))
-;; 下载指定版本数据库
-(with-open [in (client/get "http://your-server/api/your_project/{hash}?token=YOUR_TOKEN" {:as :stream})
-            out (io/output-stream "data.db")]
-  (io/copy (:body in) out))
-</code></pre>
-  <h2 class="text-xl font-semibold mt-8 mb-2">TypeScript 示例 (Node.js)</h2>
-  <pre class="bg-gray-100 rounded p-4 overflow-x-auto text-sm mb-6"><code>import fs from 'fs';
+            [clojure.java.io :as io]
+            [clojure.string :as str]))
+
+(def server-url "http://your-server/api/your_project")
+(def token "YOUR_TOKEN")
+(def db-path "data.db")
+
+(defn download-latest-db []
+  (println "数据库文件不存在，从云端下载最新版本...")
+  (try
+    (with-open [in (client/get (str server-url "/latest?token=" token) {:as :stream})
+                out (io/output-stream db-path)]
+      (io/copy (:body in) out))
+    (println "下载成功")
+    :success
+    (catch Exception e
+      (println "下载失败:" (.getMessage e))
+      :error)))
+
+(defn upload-db []
+  (println "接收到关闭信号，准备上传数据库...")
+  (try
+    (client/post server-url
+      {:multipart [{:name "token" :content token}
+                   {:name "description" :content (str "Upload at " (java.util.Date.))}
+                   {:name "database" :content (io/file db-path)}]})
+    (println "上传成功")
+    :success
+    (catch Exception e
+      (println "上传失败:" (.getMessage e))
+      :error)))
+
+(defn -main []
+  ;; 启动时：如果文件不存在则下载
+  (when-not (.exists (io/file db-path))
+    (download-latest-db))
+  
+  ;; 设置关闭钩子
+  (.addShutdownHook (Runtime/getRuntime)
+    (Thread. (fn []
+               (upload-db)
+               (System/exit 0))))
+  
+  ;; 你的主程序逻辑
+  (println "程序运行中...")
+  (Thread/sleep Long/MAX_VALUE))</code></pre>
+      </div>
+    </div>
+    
+    <!-- TypeScript 弹窗 -->
+    <div x-show="showTypeScript" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto scrollbar-hide">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-semibold">📘 TypeScript 示例 (Node.js)</h3>
+          <button @click="showTypeScript = false" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        </div>
+        <pre class="bg-gray-100 rounded p-4 overflow-x-auto text-sm"><code>import fs from 'fs';
 import axios from 'axios';
 import FormData from 'form-data';
-// 上传数据库
-const form = new FormData();
-form.append('token', 'YOUR_TOKEN');
-form.append('description', '本次更新说明（可选）');
-form.append('database', fs.createReadStream('data.db'));
-axios.post('http://your-server/api/your_project', form, {
-  headers: form.getHeaders()
-});
-// 下载最新数据库
-axios.get('http://your-server/api/your_project/latest?token=YOUR_TOKEN', { responseType: 'stream' })
-  .then(res => {
-    res.data.pipe(fs.createWriteStream('data.db'));
+import path from 'path';
+
+const serverURL = 'http://your-server/api/your_project';
+const token = 'YOUR_TOKEN';
+const dbPath = 'data.db';
+
+async function downloadLatestDB(): Promise<void> {
+  console.log('数据库文件不存在，从云端下载最新版本...');
+  try {
+    const response = await axios.get(`${serverURL}/latest?token=${token}`, { 
+      responseType: 'stream' 
+    });
+    const writer = fs.createWriteStream(dbPath);
+    response.data.pipe(writer);
+    
+    return new Promise((resolve, reject) => {
+      writer.on('finish', () => {
+        console.log('下载成功');
+        resolve();
+      });
+      writer.on('error', reject);
+    });
+  } catch (error) {
+    console.error('下载失败:', error);
+    throw error;
+  }
+}
+
+async function uploadDB(): Promise<void> {
+  console.log('接收到关闭信号，准备上传数据库...');
+  try {
+    const form = new FormData();
+    form.append('token', token);
+    form.append('description', `Upload at ${new Date().toISOString()}`);
+    form.append('database', fs.createReadStream(dbPath));
+    
+    await axios.post(serverURL, form, {
+      headers: form.getHeaders()
+    });
+    console.log('上传成功');
+  } catch (error) {
+    console.error('上传失败:', error);
+    throw error;
+  }
+}
+
+async function main() {
+  if (!fs.existsSync(dbPath)) {
+    await downloadLatestDB();
+  }
+  
+  const isDebug = process.env.NODE_ENV === 'development';
+  
+  process.on('SIGINT', async () => {
+    if (!isDebug) {
+      await uploadDB();
+    }
+    process.exit(0);
   });
-// 下载指定版本数据库
-axios.get('http://your-server/api/your_project/{hash}?token=YOUR_TOKEN', { responseType: 'stream' })
-  .then(res => {
-    res.data.pipe(fs.createWriteStream('data.db'));
+  
+  process.on('SIGTERM', async () => {
+    if (!isDebug) {
+      await uploadDB();
+    }
+    process.exit(0);
   });
-</code></pre>
-  <h2 class="text-xl font-semibold mt-8 mb-2">Dart 示例</h2>
-  <pre class="bg-gray-100 rounded p-4 overflow-x-auto text-sm mb-6"><code>import 'dart:io';
+}
+
+main().catch(console.error);</code></pre>
+      </div>
+    </div>
+    
+    <!-- Dart 弹窗 -->
+    <div x-show="showDart" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto scrollbar-hide">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-semibold">🎯 Dart 示例</h3>
+          <button @click="showDart = false" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        </div>
+        <pre class="bg-gray-100 rounded p-4 overflow-x-auto text-sm"><code>import 'dart:io';
 import 'package:http/http.dart' as http;
 
-const url = 'http://your-server/api/your_project';
+const serverURL = 'http://your-server/api/your_project';
 const token = 'YOUR_TOKEN';
+const dbPath = 'data.db';
 
-Future<void> checkAndDownloadRemoteDb({required String dbPath}) async {
-  final dbFile = File(dbPath);
-  final exist = await dbFile.exists();
-  if (exist) {
-    final bytes = await dbFile.readAsBytes();
-    final hash = md5.convert(bytes).toString();
-    final infoUrl = '$url/info/$hash?token=$token';
-    logger.info('检查远程数据库版本: $infoUrl');
-    final infoResp = await http.get(Uri.parse(infoUrl));
-    if (infoResp.statusCode == 404) {
-      logger.info('远程未找到该版本，存在数据不同步，跳过下载...');
+Future<void> downloadLatestDB() async {
+  print('数据库文件不存在，从云端下载最新版本...');
+  try {
+    final response = await http.get(
+      Uri.parse('$serverURL/latest?token=$token'),
+    );
+    
+    if (response.statusCode == 200) {
+      final file = File(dbPath);
+      await file.writeAsBytes(response.bodyBytes);
+      print('下载成功');
+    } else {
+      print('下载失败，状态码: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('下载失败: $e');
+  }
+}
+
+Future<void> uploadDB() async {
+  print('接收到关闭信号，准备上传数据库...');
+  try {
+    final dbFile = File(dbPath);
+    if (!await dbFile.exists()) {
+      print('本地数据库文件不存在，无法上传');
       return;
     }
-  }
-  if (!exist) {
-    logger.info('当前数据库不存在，从云端下载最新版本');
-  } else {
-    logger.info('当前数据库存在于备份中，从云端下载最新版本');
-  }
-  const downloadUrl = '$url/latest?token=$token';
-  final response = await http.get(Uri.parse(downloadUrl));
-  if (response.statusCode == 200) {
-    final file = File(dbPath);
-    await file.writeAsBytes(response.bodyBytes);
-    logger.info('远程数据库下载成功，已保存到: $dbPath');
-  } else {
-    logger.warning('远程数据库下载失败，状态码: ${response.statusCode}');
-  }
-}
-
-Future<void> uploadDatabaseBackup({required String dbPath}) async {
-  final dbFile = File(dbPath);
-  if (!dbFile.existsSync()) {
-    logger.warning('本地数据库文件不存在，无法上传');
-    return;
-  }
-  final request = http.MultipartRequest('POST', Uri.parse(url))
-    ..fields['token'] = token;
-  request.fields['description'] = 'Upload at ${DateTime.now()}';
-  request.files.add(
-    await http.MultipartFile.fromPath('database', dbFile.path),
-  );
-  try {
+    
+    final request = http.MultipartRequest('POST', Uri.parse(serverURL))
+      ..fields['token'] = token
+      ..fields['description'] = 'Upload at ${DateTime.now()}';
+    
+    request.files.add(
+      await http.MultipartFile.fromPath('database', dbFile.path),
+    );
+    
     final response = await request.send();
     if (response.statusCode == 200) {
-      logger.info('数据库备份上传成功');
+      print('上传成功');
     } else {
-      logger.warning('数据库备份上传失败: ${response.statusCode}');
       final body = await response.stream.bytesToString();
       if (body.contains('File already exists')) {
-        logger.info('数据库未更改，跳过上传');
+        print('数据库未更改，跳过上传');
       } else {
-        logger.warning('数据库备份上传失败: $body');
+        print('上传失败: ${response.statusCode} - $body');
       }
     }
-  } catch (e, stackTrace) {
-    logger.warning('数据库备份上传异常: $e', e, stackTrace);
+  } catch (e) {
+    print('上传失败: $e');
   }
 }
 
-ProcessSignal.sigint.watch().listen((signal) async {
-  await uploadDatabaseBackup(dbPath);
-  exit(0);
-});
-ProcessSignal.sigterm.watch().listen((signal) async {
-  await uploadDatabaseBackup(dbPath);
-  exit(0);
-});
-</code></pre>
+void main() async {
+  final dbFile = File(dbPath);
+  if (!await dbFile.exists()) {
+    await downloadLatestDB();
+  }
+  
+  final isDebug = const bool.fromEnvironment('DEBUG', defaultValue: false);
+  
+  ProcessSignal.sigint.watch().listen((signal) async {
+    if (!isDebug) {
+      await uploadDB();
+    }
+    exit(0);
+  });
+  
+  ProcessSignal.sigterm.watch().listen((signal) async {
+    if (!isDebug) {
+      await uploadDB();
+    }
+    exit(0);
+  });
+}</code></pre>
+      </div>
+    </div>
+  </div>
   <div class="mt-8 text-gray-500 text-sm">
     如需更多语言示例或有其他问题，请联系维护者。
   </div>
