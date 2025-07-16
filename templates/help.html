@@ -399,6 +399,10 @@ Future<void> uploadDB() async {
       print('本地数据库文件不存在，无法上传');
       return;
     }
+
+    // 确保数据库缓存完全写入磁盘
+    db.execute('PRAGMA synchronous = FULL');
+    db.execute('PRAGMA wal_checkpoint');
     
     final request = http.MultipartRequest('POST', Uri.parse(serverURL))
       ..fields['token'] = token
@@ -445,6 +449,8 @@ void main() async {
     }
     exit(0);
   });
+
+  // 对于阿里云 FC，启用 /pre-stop 端点并在其中执行 uploadDB() 方法
 }</code></pre>
       </div>
     </div>
