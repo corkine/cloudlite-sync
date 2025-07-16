@@ -5,10 +5,15 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+func IsURL(url string) bool {
+	return strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://")
+}
 
 // GenerateHash 生成文件的MD5哈希
 func GenerateHash(data []byte) string {

@@ -56,7 +56,7 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <a href="/project/detail?id={{.ID}}" class="text-blue-600 hover:text-blue-900 mr-4">详情</a>
-                  <button @click="openEdit('{{.ID}}', '{{.Name}}', '{{.Description}}')" type="button"
+                  <button @click="openEdit('{{.ID}}', '{{.Name}}', '{{.Description}}', '{{.Website}}')" type="button"
                     class="text-blue-600 hover:text-blue-900 mr-4">编辑</button>
                   <form action="/project/delete" method="POST" class="inline">
                     <input type="hidden" name="id" value="{{.ID}}">
@@ -104,6 +104,14 @@
                 placeholder="请输入项目描述（可选）"></textarea>
             </div>
           </div>
+          <div>
+            <label for="website" class="block text-sm font-medium text-gray-700">服务地址</label>
+            <div class="mt-1">
+              <input type="text" name="website" id="website"
+                class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2"
+                placeholder="请输入服务地址（可选）">
+            </div>
+          </div>
           <div class="flex justify-end space-x-3">
             <button type="button" @click="closeCreate()"
               class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
@@ -141,6 +149,14 @@
               <textarea name="description" id="edit_description" rows="3" x-model="editDescription"
                 class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2"
                 placeholder="请输入项目描述（可选）"></textarea>
+            </div>
+          </div>
+          <div>
+            <label for="edit_website" class="block text-sm font-medium text-gray-700">服务地址</label>
+            <div class="mt-1">
+              <input type="text" name="website" id="edit_website" x-model="editWebsite"
+                class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2"
+                placeholder="请输入服务地址（可选）">
             </div>
           </div>
           <div class="flex justify-end space-x-3">
@@ -185,16 +201,18 @@
       editId: '',
       editName: '',
       editDescription: '',
+      editWebsite: '',
       openCreate() {
         this.showCreate = true;
       },
       closeCreate() {
         this.showCreate = false;
       },
-      openEdit(id, name, description) {
+      openEdit(id, name, description, website) {
         this.editId = id;
         this.editName = name;
         this.editDescription = description;
+        this.editWebsite = website;
         this.showEdit = true;
       },
       closeEdit() {

@@ -10,11 +10,11 @@ import (
 
 // CreateProject 创建项目
 func (db *DB) CreateProject(project *models.Project) error {
-	query := `INSERT INTO projects (id, name, description, created_at, updated_at) 
-			  VALUES (?, ?, ?, ?, ?)`
+	query := `INSERT INTO projects (id, name, description, website, created_at, updated_at) 
+			  VALUES (?, ?, ?, ?, ?, ?)`
 
 	now := time.Now()
-	_, err := db.Exec(query, project.ID, project.Name, project.Description, now, now)
+	_, err := db.Exec(query, project.ID, project.Name, project.Description, project.Website, now, now)
 	if err != nil {
 		return fmt.Errorf("failed to create project: %w", err)
 	}
@@ -26,13 +26,14 @@ func (db *DB) CreateProject(project *models.Project) error {
 
 // GetProject 获取项目
 func (db *DB) GetProject(id string) (*models.Project, error) {
-	query := `SELECT id, name, description, created_at, updated_at FROM projects WHERE id = ?`
+	query := `SELECT id, name, description, website, created_at, updated_at FROM projects WHERE id = ?`
 
 	project := &models.Project{}
 	err := db.QueryRow(query, id).Scan(
 		&project.ID,
 		&project.Name,
 		&project.Description,
+		&project.Website,
 		&project.CreatedAt,
 		&project.UpdatedAt,
 	)
@@ -59,7 +60,7 @@ func (db *DB) ListProjects(page, pageSize int) ([]*models.Project, int, error) {
 
 	// 获取分页数据
 	offset := (page - 1) * pageSize
-	query := `SELECT id, name, description, created_at, updated_at 
+	query := `SELECT id, name, description, website, created_at, updated_at 
 			  FROM projects ORDER BY created_at DESC LIMIT ? OFFSET ?`
 
 	rows, err := db.Query(query, pageSize, offset)
@@ -75,6 +76,7 @@ func (db *DB) ListProjects(page, pageSize int) ([]*models.Project, int, error) {
 			&project.ID,
 			&project.Name,
 			&project.Description,
+			&project.Website,
 			&project.CreatedAt,
 			&project.UpdatedAt,
 		)
@@ -89,10 +91,10 @@ func (db *DB) ListProjects(page, pageSize int) ([]*models.Project, int, error) {
 
 // UpdateProject 更新项目
 func (db *DB) UpdateProject(project *models.Project) error {
-	query := `UPDATE projects SET name = ?, description = ?, updated_at = ? WHERE id = ?`
+	query := `UPDATE projects SET name = ?, description = ?, website = ?, updated_at = ? WHERE id = ?`
 
 	now := time.Now()
-	_, err := db.Exec(query, project.Name, project.Description, now, project.ID)
+	_, err := db.Exec(query, project.Name, project.Description, project.Website, now, project.ID)
 	if err != nil {
 		return fmt.Errorf("failed to update project: %w", err)
 	}

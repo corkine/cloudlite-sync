@@ -63,6 +63,8 @@ func initTables(db *sql.DB) error {
 		)`,
 	}
 
+	db.Exec(`ALTER TABLE projects ADD COLUMN website TEXT DEFAULT ''`)
+
 	for _, query := range queries {
 		if _, err := db.Exec(query); err != nil {
 			return fmt.Errorf("failed to execute query: %w", err)

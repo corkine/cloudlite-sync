@@ -653,6 +653,22 @@ video {
   top: 1rem;
 }
 
+.left-0 {
+  left: 0px;
+}
+
+.top-0 {
+  top: 0px;
+}
+
+.top-16 {
+  top: 4rem;
+}
+
+.top-20 {
+  top: 5rem;
+}
+
 .isolate {
   isolation: isolate;
 }
@@ -791,6 +807,14 @@ video {
 
 .mt-8 {
   margin-top: 2rem;
+}
+
+.mt-5 {
+  margin-top: 1.25rem;
+}
+
+.mt-16 {
+  margin-top: 4rem;
 }
 
 .box-border {
@@ -2300,6 +2324,10 @@ video {
 
 .pt-4 {
   padding-top: 1rem;
+}
+
+.pt-16 {
+  padding-top: 4rem;
 }
 
 .text-left {

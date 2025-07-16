@@ -32,6 +32,11 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 	data.SetUser(session.GetUsername(r))
 	data.SetPagination(page, total, pageSize)
 
+	errorMsg := r.URL.Query().Get("error")
+	if errorMsg != "" {
+		data.SetError(errorMsg)
+	}
+
 	h.tmpl.Render(w, "dashboard.html", data)
 }
 
@@ -45,12 +50,13 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	id := r.FormValue("id")
 	name := r.FormValue("name")
 	description := r.FormValue("description")
+	website := r.FormValue("website")
 
 	if name == "" {
 		data := template.NewPageData("创建项目", nil)
 		data.SetUser(session.GetUsername(r))
 		data.SetError("项目名称不能为空")
-		h.tmpl.Render(w, "create_project.html", data)
+		http.Redirect(w, r, "/?error=项目名称不能为空", http.StatusSeeOther)
 		return
 	}
 
@@ -61,7 +67,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 			data := template.NewPageData("创建项目", nil)
 			data.SetUser(session.GetUsername(r))
 			data.SetError("项目ID不能超过32个字符")
-			h.tmpl.Render(w, "create_project.html", data)
+			http.Redirect(w, r, "/?error=项目ID不能超过32个字符", http.StatusSeeOther)
 			return
 		}
 		for _, c := range id {
@@ -69,7 +75,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 				data := template.NewPageData("创建项目", nil)
 				data.SetUser(session.GetUsername(r))
 				data.SetError("项目ID只能包含字母、数字、下划线和短横线")
-				h.tmpl.Render(w, "create_project.html", data)
+				http.Redirect(w, r, "/?error=项目ID只能包含字母、数字、下划线和短横线", http.StatusSeeOther)
 				return
 			}
 		}
@@ -79,14 +85,24 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 			data := template.NewPageData("创建项目", nil)
 			data.SetUser(session.GetUsername(r))
 			data.SetError("检查项目ID时出错: " + err.Error())
-			h.tmpl.Render(w, "create_project.html", data)
+			http.Redirect(w, r, "/?error=检查项目ID时出错: "+err.Error(), http.StatusSeeOther)
 			return
 		}
 		if proj != nil {
 			data := template.NewPageData("创建项目", nil)
 			data.SetUser(session.GetUsername(r))
 			data.SetError("项目ID已存在，请更换")
-			h.tmpl.Render(w, "create_project.html", data)
+			http.Redirect(w, r, "/?error=项目ID已存在，请更换", http.StatusSeeOther)
+			return
+		}
+	}
+
+	if website != "" {
+		if !utils.IsURL(website) {
+			data := template.NewPageData("创建项目", nil)
+			data.SetUser(session.GetUsername(r))
+			data.SetError("网站URL格式不正确")
+			http.Redirect(w, r, "/?error=网站URL格式不正确", http.StatusSeeOther)
 			return
 		}
 	}
@@ -95,6 +111,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		ID:          id,
 		Name:        name,
 		Description: description,
+		Website:     website,
 	}
 	if id == "" {
 		project.ID = database.GenerateProjectID()
@@ -105,7 +122,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		data := template.NewPageData("创建项目", nil)
 		data.SetUser(session.GetUsername(r))
 		data.SetError("创建项目失败: " + err.Error())
-		h.tmpl.Render(w, "create_project.html", data)
+		http.Redirect(w, r, "/?error=创建项目失败: "+err.Error(), http.StatusSeeOther)
 		return
 	}
 
@@ -122,29 +139,36 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	projectID := r.FormValue("id")
 	name := r.FormValue("name")
 	description := r.FormValue("description")
-
+	website := r.FormValue("website")
 	if projectID == "" || name == "" {
-		http.Error(w, "Project ID and name are required", http.StatusBadRequest)
+		http.Redirect(w, r, "/?error=项目ID和名称不能为空", http.StatusSeeOther)
 		return
 	}
 
 	project, err := h.db.GetProject(projectID)
 	if err != nil {
-		http.Error(w, "Failed to get project", http.StatusInternalServerError)
+		http.Redirect(w, r, "/?error=获取项目失败", http.StatusSeeOther)
 		return
 	}
 
 	if project == nil {
-		http.Error(w, "Project not found", http.StatusNotFound)
+		http.Redirect(w, r, "/?error=项目不存在", http.StatusSeeOther)
 		return
+	}
+
+	if website != "" {
+		if !utils.IsURL(website) {
+			http.Redirect(w, r, "/?error=网站URL格式不正确", http.StatusSeeOther)
+			return
+		}
 	}
 
 	project.Name = name
 	project.Description = description
-
+	project.Website = website
 	err = h.db.UpdateProject(project)
 	if err != nil {
-		http.Error(w, "Failed to update project", http.StatusInternalServerError)
+		http.Redirect(w, r, "/?error=更新项目失败", http.StatusSeeOther)
 		return
 	}
 
@@ -160,13 +184,13 @@ func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 
 	projectID := r.FormValue("id")
 	if projectID == "" {
-		http.Error(w, "Project ID is required", http.StatusBadRequest)
+		http.Redirect(w, r, "/?error=项目ID不能为空", http.StatusSeeOther)
 		return
 	}
 
 	err := h.db.DeleteProject(projectID)
 	if err != nil {
-		http.Error(w, "Failed to delete project", http.StatusInternalServerError)
+		http.Redirect(w, r, "/?error=删除项目失败", http.StatusSeeOther)
 		return
 	}
 
@@ -177,18 +201,18 @@ func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ProjectDetail(w http.ResponseWriter, r *http.Request) {
 	projectID := r.URL.Query().Get("id")
 	if projectID == "" {
-		http.Error(w, "Project ID is required", http.StatusBadRequest)
+		http.Redirect(w, r, "/?error=项目ID不能为空", http.StatusSeeOther)
 		return
 	}
 
 	project, err := h.db.GetProject(projectID)
 	if err != nil {
-		http.Error(w, "Failed to get project", http.StatusInternalServerError)
+		http.Redirect(w, r, "/?error=获取项目失败", http.StatusSeeOther)
 		return
 	}
 
 	if project == nil {
-		http.Error(w, "Project not found", http.StatusNotFound)
+		http.Redirect(w, r, "/?error=项目不存在", http.StatusSeeOther)
 		return
 	}
 
@@ -199,7 +223,7 @@ func (h *Handler) ProjectDetail(w http.ResponseWriter, r *http.Request) {
 	}
 	credentials, credTotal, err := h.db.ListCredentials(projectID, credPage, 10)
 	if err != nil {
-		http.Error(w, "Failed to get credentials", http.StatusInternalServerError)
+		http.Redirect(w, r, "/?error=获取凭证失败", http.StatusSeeOther)
 		return
 	}
 
@@ -210,7 +234,7 @@ func (h *Handler) ProjectDetail(w http.ResponseWriter, r *http.Request) {
 	}
 	versions, versionTotal, err := h.db.ListDatabaseVersions(projectID, versionPage, 10)
 	if err != nil {
-		http.Error(w, "Failed to get versions", http.StatusInternalServerError)
+		http.Redirect(w, r, "/?error=获取版本失败", http.StatusSeeOther)
 		return
 	}
 
@@ -245,27 +269,27 @@ func (h *Handler) UploadDatabaseVersion(w http.ResponseWriter, r *http.Request) 
 	projectID := r.FormValue("project_id")
 	description := r.FormValue("description")
 	if projectID == "" {
-		http.Error(w, "Project ID is required", http.StatusBadRequest)
+		http.Redirect(w, r, "/project/detail?id="+projectID+"&error=项目ID不能为空", http.StatusSeeOther)
 		return
 	}
 
 	// 校验项目是否存在
 	project, err := h.db.GetProject(projectID)
 	if err != nil || project == nil {
-		http.Error(w, "Project not found", http.StatusBadRequest)
+		http.Redirect(w, r, "/project/detail?id="+projectID+"&error=无法找到项目", http.StatusSeeOther)
 		return
 	}
 
 	file, header, err := r.FormFile("database")
 	if err != nil {
-		http.Error(w, "Failed to get uploaded file", http.StatusBadRequest)
+		http.Redirect(w, r, "/project/detail?id="+projectID+"&error=获取上传文件失败", http.StatusSeeOther)
 		return
 	}
 	defer file.Close()
 
 	fileData, err := io.ReadAll(file)
 	if err != nil {
-		http.Error(w, "Failed to read file", http.StatusInternalServerError)
+		http.Redirect(w, r, "/project/detail?id="+projectID+"&error=读取文件失败", http.StatusSeeOther)
 		return
 	}
 
@@ -273,7 +297,7 @@ func (h *Handler) UploadDatabaseVersion(w http.ResponseWriter, r *http.Request) 
 	// 检查文件是否已存在
 	existingVersion, err := h.db.GetVersionByHash(projectID, fileHash)
 	if err != nil {
-		http.Error(w, "Failed to check existing version", http.StatusInternalServerError)
+		http.Redirect(w, r, "/project/detail?id="+projectID+"&error=检查版本失败", http.StatusSeeOther)
 		return
 	}
 	if existingVersion != nil {
@@ -286,7 +310,7 @@ func (h *Handler) UploadDatabaseVersion(w http.ResponseWriter, r *http.Request) 
 	// 上传到OSS
 	err = h.ossClient.UploadFile(ossKey, fileData)
 	if err != nil {
-		http.Error(w, "Failed to upload file to OSS", http.StatusInternalServerError)
+		http.Redirect(w, r, "/project/detail?id="+projectID+"&error=上传文件失败", http.StatusSeeOther)
 		return
 	}
 
@@ -320,13 +344,13 @@ func (h *Handler) DeleteDatabaseVersion(w http.ResponseWriter, r *http.Request) 
 	versionID := r.FormValue("id")
 	projectID := r.FormValue("project_id")
 	if versionID == "" || projectID == "" {
-		http.Error(w, "Version ID and Project ID are required", http.StatusBadRequest)
+		http.Redirect(w, r, "/project/detail?id="+projectID+"&error=版本ID和项目ID不能为空", http.StatusSeeOther)
 		return
 	}
 	// 获取版本信息
 	version, err := h.db.GetDatabaseVersion(versionID)
 	if err != nil || version == nil {
-		http.Error(w, "Version not found", http.StatusBadRequest)
+		http.Redirect(w, r, "/project/detail?id="+projectID+"&error=版本不存在", http.StatusSeeOther)
 		return
 	}
 	// 删除OSS文件
@@ -334,7 +358,7 @@ func (h *Handler) DeleteDatabaseVersion(w http.ResponseWriter, r *http.Request) 
 	// 删除数据库记录
 	err = h.db.DeleteDatabaseVersion(versionID)
 	if err != nil {
-		http.Error(w, "Failed to delete version", http.StatusInternalServerError)
+		http.Redirect(w, r, "/project/detail?id="+projectID+"&error=删除版本失败", http.StatusSeeOther)
 		return
 	}
 	http.Redirect(w, r, "/project/detail?id="+projectID, http.StatusSeeOther)
@@ -345,7 +369,7 @@ func (h *Handler) ProjectDownload(w http.ResponseWriter, r *http.Request) {
 	projectID := r.URL.Query().Get("project_id")
 	hash := r.URL.Query().Get("hash")
 	if projectID == "" {
-		http.Error(w, "Project ID is required", http.StatusBadRequest)
+		http.Redirect(w, r, "/project/detail?id="+projectID+"&error=项目ID不能为空", http.StatusSeeOther)
 		return
 	}
 	// session鉴权
@@ -362,16 +386,16 @@ func (h *Handler) ProjectDownload(w http.ResponseWriter, r *http.Request) {
 		dbVersion, err = h.db.GetVersionByHash(projectID, hash)
 	}
 	if err != nil {
-		http.Error(w, "Failed to get version", http.StatusInternalServerError)
+		http.Redirect(w, r, "/project/detail?id="+projectID+"&error=获取版本失败", http.StatusSeeOther)
 		return
 	}
 	if dbVersion == nil {
-		http.Error(w, "Version not found", http.StatusNotFound)
+		http.Redirect(w, r, "/project/detail?id="+projectID+"&error=版本不存在", http.StatusSeeOther)
 		return
 	}
 	fileData, err := h.ossClient.DownloadFile(dbVersion.OSSKey)
 	if err != nil {
-		http.Error(w, "Failed to download file from OSS", http.StatusInternalServerError)
+		http.Redirect(w, r, "/project/detail?id="+projectID+"&error=下载文件失败", http.StatusSeeOther)
 		return
 	}
 	w.Header().Set("Content-Type", "application/octet-stream")

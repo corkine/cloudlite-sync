@@ -31,6 +31,12 @@
           </dd>
         </div>
         <div class="bg-white px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+          <dt class="text-sm font-medium text-gray-500">服务地址</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+            <a href="{{.Data.project.Website}}" target="_blank" class="text-blue-600 hover:text-blue-700">{{.Data.project.Website}}</a>
+          </dd>
+        </div>
+        <div class="bg-white px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
           <dt class="text-sm font-medium text-gray-500">创建时间</dt>
           <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
             {{.Data.project.CreatedAt.Format "2006-01-02 15:04:05"}}
@@ -259,7 +265,7 @@
               {{.Version}}
             </td>
             <td
-              class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+              class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 cursor-pointer"
               title="{{.FileHash}}"
             >
               {{.FileName}}
