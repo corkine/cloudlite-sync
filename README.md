@@ -89,6 +89,13 @@ go run cmd/server/main.go
 - 管理界面: http://localhost:8080
 - 默认登录: admin / admin123
 
+### 5. 编译 CSS
+
+```bash
+pnpm install
+pnpm run build
+```
+
 ## Docker 部署
 
 ### 1. 构建镜像

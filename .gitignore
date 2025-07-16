@@ -27,3 +27,7 @@ __debug_bin*
 # 系统文件
 .DS_Store
 Thumbs.db
+
+node_modules/
+pnpm-lock.yaml
+package-lock.json
