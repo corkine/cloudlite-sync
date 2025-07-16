@@ -227,6 +227,11 @@ func (h *Handler) ProjectDetail(w http.ResponseWriter, r *http.Request) {
 	pageData := template.NewPageData("项目详情", data)
 	pageData.SetUser(session.GetUsername(r))
 
+	errorMsg := r.URL.Query().Get("error")
+	if errorMsg != "" {
+		pageData.SetError(errorMsg)
+	}
+
 	h.tmpl.Render(w, "project_detail.html", pageData)
 }
 
@@ -272,9 +277,7 @@ func (h *Handler) UploadDatabaseVersion(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if existingVersion != nil {
-		data := template.NewPageData("项目详情", map[string]interface{}{"error": "文件已存在", "project": project})
-		data.SetUser(session.GetUsername(r))
-		h.tmpl.Render(w, "project_detail.html", data)
+		http.Redirect(w, r, "/project/detail?id="+projectID+"&error=文件已存在", http.StatusSeeOther)
 		return
 	}
 
@@ -301,7 +304,7 @@ func (h *Handler) UploadDatabaseVersion(w http.ResponseWriter, r *http.Request) 
 	err = h.db.CreateDatabaseVersion(dbVersion)
 	if err != nil {
 		h.ossClient.DeleteFile(ossKey)
-		http.Error(w, "Failed to save version record", http.StatusInternalServerError)
+		http.Redirect(w, r, "/project/detail?id="+projectID+"&error=保存版本记录失败", http.StatusSeeOther)
 		return
 	}
 
