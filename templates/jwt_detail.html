@@ -162,37 +162,12 @@
               <button onclick="showToken('{{.Token}}')" class="text-blue-600 hover:text-blue-700 mr-4">
                 查看
               </button>
-              <button onclick="copyToken('{{.Token}}')" class="text-green-600 hover:text-green-700 mr-4">
-                复制
-              </button>
               <button onclick="verifyToken('{{.Token}}')" class="text-purple-600 hover:text-purple-700 mr-4">
                 验证
               </button>
-              {{if .IsActive}}
-              <form action="/jwt/token/update" method="POST" class="inline">
-                <input type="hidden" name="id" value="{{.ID}}" />
-                <input type="hidden" name="purpose" value="{{.Purpose}}" />
-                <input type="hidden" name="username" value="{{.Username}}" />
-                <input type="hidden" name="role" value="{{.Role}}" />
-                <input type="hidden" name="is_active" value="false" />
-                <input type="hidden" name="expires_at" value="{{.ExpiresAt.Format "2006-01-02T15:04:05"}}" />
-                <button type="submit" class="text-orange-600 hover:text-orange-700 mr-4">
-                  禁用
-                </button>
-              </form>
-              {{else}}
-              <form action="/jwt/token/update" method="POST" class="inline">
-                <input type="hidden" name="id" value="{{.ID}}" />
-                <input type="hidden" name="purpose" value="{{.Purpose}}" />
-                <input type="hidden" name="username" value="{{.Username}}" />
-                <input type="hidden" name="role" value="{{.Role}}" />
-                <input type="hidden" name="is_active" value="true" />
-                <input type="hidden" name="expires_at" value="{{.ExpiresAt.Format "2006-01-02T15:04:05"}}" />
-                <button type="submit" class="text-green-600 hover:text-green-700 mr-4">
-                  启用
-                </button>
-              </form>
-              {{end}}
+              <button data-id="{{.ID}}" data-purpose="{{.Purpose}}" data-username="{{.Username}}" data-role="{{.Role}}" data-active="{{.IsActive}}" data-expires="{{.ExpiresAt.Format "2006-01-02T15:04:05"}}" onclick="openEditTokenModalFromData(this)" class="text-orange-600 hover:text-orange-700 mr-4">
+                编辑
+              </button>
               <form action="/jwt/token/delete" method="POST" class="inline">
                 <input type="hidden" name="id" value="{{.ID}}" />
                 <button type="submit" onclick="return confirm('确定要删除这个JWT令牌吗？')"
@@ -307,6 +282,62 @@
   </div>
 </div>
 
+<!-- 编辑令牌模态框 -->
+<div id="editTokenModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 hidden">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-5">
+    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-6">编辑JWT令牌</h3>
+    <form action="/jwt/token/update" method="POST">
+      <input type="hidden" name="id" id="editTokenId" />
+      <input type="hidden" name="username" id="editTokenUsername" />
+      <input type="hidden" name="role" id="editTokenRole" />
+      <input type="hidden" name="expires_at" id="editTokenExpiresAt" />
+      <div class="space-y-6">
+        <div>
+          <label for="editTokenPurpose" class="block text-sm font-medium text-gray-700">用途</label>
+          <div class="mt-1">
+            <input type="text" name="purpose" id="editTokenPurpose" required
+              class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2"
+              placeholder="请输入令牌用途">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">用户名</label>
+          <div class="mt-1">
+            <input type="text" id="editTokenUsernameDisplay" readonly
+              class="shadow-sm block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2 bg-gray-50 text-gray-500">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">角色</label>
+          <div class="mt-1">
+            <input type="text" id="editTokenRoleDisplay" readonly
+              class="shadow-sm block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2 bg-gray-50 text-gray-500">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">状态</label>
+          <div class="mt-1">
+            <label class="inline-flex items-center">
+              <input type="checkbox" name="is_active" id="editTokenIsActive" value="true" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+              <span class="ml-2 text-sm text-gray-700">启用令牌</span>
+            </label>
+          </div>
+        </div>
+        <div class="flex justify-end space-x-3">
+          <button type="button" onclick="closeEditTokenModal()"
+            class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            取消
+          </button>
+          <button type="submit"
+            class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            更新令牌
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 function toggleKeys() {
   const container = document.getElementById('keysContainer');
@@ -360,6 +391,29 @@ function openCreateTokenModal() {
 
 function closeCreateTokenModal() {
   document.getElementById('createTokenModal').classList.add('hidden');
+}
+
+function openEditTokenModalFromData(button) {
+  const id = button.getAttribute('data-id');
+  const purpose = button.getAttribute('data-purpose');
+  const username = button.getAttribute('data-username');
+  const role = button.getAttribute('data-role');
+  const isActive = button.getAttribute('data-active') === 'true';
+  const expiresAt = button.getAttribute('data-expires');
+  
+  document.getElementById('editTokenId').value = id;
+  document.getElementById('editTokenPurpose').value = purpose;
+  document.getElementById('editTokenUsername').value = username;
+  document.getElementById('editTokenRole').value = role;
+  document.getElementById('editTokenExpiresAt').value = expiresAt;
+  document.getElementById('editTokenUsernameDisplay').value = username;
+  document.getElementById('editTokenRoleDisplay').value = role;
+  document.getElementById('editTokenIsActive').checked = isActive;
+  document.getElementById('editTokenModal').classList.remove('hidden');
+}
+
+function closeEditTokenModal() {
+  document.getElementById('editTokenModal').classList.add('hidden');
 }
 
 function generateKeyPair() {
