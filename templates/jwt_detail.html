@@ -541,7 +541,7 @@ function shareToken(tokenId) {
   .then(data => {
     if (data.success) {
       const code = data.data.code;
-      const expiresAt = new Date(data.data.expires_at);
+      const remainingSeconds = data.data.remaining_seconds;
       const host = window.location.origin;
       const shareUrl = `${host}/s/${code}`;
       
@@ -558,7 +558,7 @@ function shareToken(tokenId) {
                 <h3 class="text-sm font-medium text-green-800">分享码生成成功</h3>
                 <div class="mt-2 text-sm text-green-700">
                   <p>分享码：<span class="font-mono font-bold text-lg">${code}</span></p>
-                  <p class="mt-1">有效期：${Math.ceil((new Date(expiresAt) - new Date()) / 1000)}秒</p>
+                  <p class="mt-1">有效期：${remainingSeconds}秒</p>
                 </div>
               </div>
             </div>
@@ -578,7 +578,7 @@ function shareToken(tokenId) {
           
           <div class="bg-yellow-50 border border-yellow-200 rounded-md p-3">
             <p class="text-sm text-yellow-800">
-              <strong>注意：</strong>分享码将在 <span id="shareCountdown" class="font-bold">${Math.ceil((new Date(expiresAt) - new Date()) / 1000)}</span> 秒后过期
+              <strong>注意：</strong>分享码将在 <span id="shareCountdown" class="font-bold">${remainingSeconds}</span> 秒后过期
             </p>
           </div>
           
@@ -592,7 +592,7 @@ function shareToken(tokenId) {
       `;
       
       // 启动倒计时
-      let countdown = Math.ceil((new Date(expiresAt) - new Date()) / 1000);
+      let countdown = remainingSeconds;
       const countdownElement = document.getElementById('shareCountdown');
       const countdownInterval = setInterval(() => {
         countdown--;

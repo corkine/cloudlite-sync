@@ -47,6 +47,10 @@ func (s *ShareCodeService) SetExpireSeconds(seconds int) {
 	s.mutex.Unlock()
 }
 
+func (s *ShareCodeService) GetExpireSeconds() int {
+	return s.expireSeconds
+}
+
 // GenerateShareCode 生成6位数字分享码
 func (s *ShareCodeService) GenerateShareCode(token string) (string, error) {
 	// 生成6位随机数字

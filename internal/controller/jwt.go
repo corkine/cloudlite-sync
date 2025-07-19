@@ -587,19 +587,12 @@ func (c *JWTController) GenerateShareCode(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// 获取分享码信息以获取过期时间
-	shareCode, exists := shareService.GetCodeInfo(code)
-	expiresAt := time.Now().Add(30 * time.Second) // 默认值
-	if exists {
-		expiresAt = shareCode.ExpiresAt
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"data": map[string]interface{}{
-			"code":       code,
-			"expires_at": expiresAt,
+			"code":              code,
+			"remaining_seconds": shareService.GetExpireSeconds(),
 		},
 		"message": "分享码生成成功",
 	})
