@@ -18,6 +18,7 @@ type Handler struct {
 	db        *database.DB
 	ossClient *oss.OSSClient
 	tmpl      *template.TemplateEngine
+	jwtCtrl   *JWTController
 }
 
 func NewRouter(cfg *config.Config, db *database.DB, ossClient *oss.OSSClient) *chi.Mux {
@@ -28,6 +29,7 @@ func NewRouter(cfg *config.Config, db *database.DB, ossClient *oss.OSSClient) *c
 		db:        db,
 		ossClient: ossClient,
 		tmpl:      template.New(),
+		jwtCtrl:   NewJWTController(db),
 	}
 
 	r := chi.NewRouter()
@@ -64,6 +66,25 @@ func NewRouter(cfg *config.Config, db *database.DB, ossClient *oss.OSSClient) *c
 		r.Post("/credential/delete", handler.DeleteCredential)
 		r.Post("/credential/activate", handler.ActivateCredential)
 		r.Post("/credential/deactivate", handler.DeactivateCredential)
+
+		// JWT项目管理
+		r.Get("/jwt", handler.JWTDashboard)
+		r.Get("/jwt/detail", handler.JWTProjectDetail)
+		r.Post("/jwt/project/create", handler.jwtCtrl.CreateJWTProject)
+		r.Get("/jwt/project/get", handler.jwtCtrl.GetJWTProject)
+		r.Get("/jwt/project/list", handler.jwtCtrl.ListJWTProjects)
+		r.Post("/jwt/project/update", handler.jwtCtrl.UpdateJWTProject)
+		r.Post("/jwt/project/delete", handler.jwtCtrl.DeleteJWTProject)
+		r.Post("/jwt/key/generate", handler.jwtCtrl.GenerateKeyPair)
+
+		// JWT令牌管理
+		r.Post("/jwt/token/create", handler.jwtCtrl.CreateJWTToken)
+		r.Get("/jwt/token/get", handler.jwtCtrl.GetJWTToken)
+		r.Get("/jwt/token/list", handler.jwtCtrl.ListJWTTokens)
+		r.Post("/jwt/token/update", handler.jwtCtrl.UpdateJWTToken)
+		r.Post("/jwt/token/delete", handler.jwtCtrl.DeleteJWTToken)
+		r.Post("/jwt/token/delete_expired", handler.jwtCtrl.DeleteExpiredJWTTokens)
+		r.Get("/jwt/token/verify", handler.jwtCtrl.VerifyJWTToken)
 	})
 
 	// API路由（第三方访问）

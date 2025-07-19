@@ -36,6 +36,7 @@ func initTables(db *sql.DB) error {
 			id TEXT PRIMARY KEY,
 			name TEXT NOT NULL,
 			description TEXT,
+			website TEXT DEFAULT '',
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
@@ -61,9 +62,29 @@ func initTables(db *sql.DB) error {
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (project_id) REFERENCES projects(id)
 		)`,
+		`CREATE TABLE IF NOT EXISTS jwt_projects (
+			id TEXT PRIMARY KEY,
+			name TEXT NOT NULL,
+			description TEXT,
+			public_key TEXT NOT NULL,
+			private_key TEXT NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS jwt_tokens (
+			id TEXT PRIMARY KEY,
+			project_id TEXT NOT NULL,
+			purpose TEXT NOT NULL,
+			username TEXT NOT NULL,
+			role TEXT NOT NULL,
+			token TEXT UNIQUE NOT NULL,
+			is_active BOOLEAN DEFAULT 1,
+			expires_at DATETIME NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (project_id) REFERENCES jwt_projects(id)
+		)`,
 	}
-
-	db.Exec(`ALTER TABLE projects ADD COLUMN website TEXT DEFAULT ''`)
 
 	for _, query := range queries {
 		if _, err := db.Exec(query); err != nil {

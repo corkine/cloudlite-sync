@@ -28,9 +28,10 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := template.NewPageData("仪表板", projects)
+	data := template.NewPageData("数据管理", projects)
 	data.SetUser(session.GetUsername(r))
 	data.SetPagination(page, total, pageSize)
+	data.SetCurrentPage("database")
 
 	errorMsg := r.URL.Query().Get("error")
 	if errorMsg != "" {
@@ -408,4 +409,73 @@ func (h *Handler) HelpPage(w http.ResponseWriter, r *http.Request) {
 	data := template.NewPageData("帮助", nil)
 	data.SetUser(session.GetUsername(r))
 	h.tmpl.Render(w, "help.html", data)
+}
+
+// JWTDashboard JWT管理仪表板
+func (h *Handler) JWTDashboard(w http.ResponseWriter, r *http.Request) {
+	// 获取JWT项目列表
+	projects, err := h.db.ListJWTProjects()
+	if err != nil {
+		http.Error(w, "获取JWT项目列表失败: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data := template.NewPageData("密钥管理", projects)
+	data.SetUser(session.GetUsername(r))
+	data.SetCurrentPage("jwt")
+
+	errorMsg := r.URL.Query().Get("error")
+	if errorMsg != "" {
+		data.SetError(errorMsg)
+	}
+
+	h.tmpl.Render(w, "jwt_dashboard.html", data)
+}
+
+// JWTProjectDetail 显示JWT项目详情
+func (h *Handler) JWTProjectDetail(w http.ResponseWriter, r *http.Request) {
+	projectID := r.URL.Query().Get("id")
+	if projectID == "" {
+		http.Redirect(w, r, "/jwt?error=项目ID不能为空", http.StatusSeeOther)
+		return
+	}
+
+	project, err := h.db.GetJWTProject(projectID)
+	if err != nil {
+		http.Redirect(w, r, "/jwt?error=获取JWT项目失败", http.StatusSeeOther)
+		return
+	}
+
+	if project == nil {
+		http.Redirect(w, r, "/jwt?error=JWT项目不存在", http.StatusSeeOther)
+		return
+	}
+
+	// 获取项目的令牌列表
+	tokens, err := h.db.ListJWTTokens(projectID)
+	if err != nil {
+		http.Redirect(w, r, "/jwt?error=获取令牌列表失败", http.StatusSeeOther)
+		return
+	}
+
+	data := map[string]interface{}{
+		"project": project,
+		"tokens":  tokens,
+	}
+
+	pageData := template.NewPageData("令牌项目详情", data)
+	pageData.SetUser(session.GetUsername(r))
+	pageData.SetCurrentPage("jwt")
+
+	errorMsg := r.URL.Query().Get("error")
+	if errorMsg != "" {
+		pageData.SetError(errorMsg)
+	}
+
+	successMsg := r.URL.Query().Get("success")
+	if successMsg != "" {
+		pageData.SetSuccess(successMsg)
+	}
+
+	h.tmpl.Render(w, "jwt_detail.html", pageData)
 }

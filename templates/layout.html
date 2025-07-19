@@ -50,6 +50,18 @@
             </span>
             <span>CloudLiteSync</span>
           </a>
+          
+          <!-- 导航菜单 -->
+          {{if .User}}
+          <div class="ml-10 flex items-baseline space-x-4">
+            <a href="/" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {{if eq .CurrentPage "database"}}bg-blue-100 text-blue-700{{end}}">
+              数据管理
+            </a>
+            <a href="/jwt" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {{if eq .CurrentPage "jwt"}}bg-blue-100 text-blue-700{{end}}">
+              令牌管理
+            </a>
+          </div>
+          {{end}}
         </div>
         <div class="flex items-center space-x-4">
           {{if .User}}
@@ -58,7 +70,6 @@
           {{else}}
           <a href="/login" class="text-blue-600 hover:text-blue-800">登录</a>
           {{end}}
-          <a href="/help" class="text-gray-600 hover:text-blue-600">帮助</a>
         </div>
       </div>
     </div>

@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"time"
 
 	"chchma.com/cloudlite-sync/internal/utils"
 )
@@ -21,6 +22,21 @@ func New() *TemplateEngine {
 			return t.(string)
 		},
 		"formatFileSize": utils.FormatFileSize, // 直接用 utils 里的函数
+		"now": func() time.Time {
+			return time.Now()
+		},
+		"isExpired": func(expiresAt time.Time) bool {
+			return time.Now().After(expiresAt)
+		},
+		"getJWTStatus": func(isActive bool, expiresAt time.Time) string {
+			if !isActive {
+				return "disabled"
+			}
+			if time.Now().After(expiresAt) {
+				return "expired"
+			}
+			return "active"
+		},
 	}
 
 	return &TemplateEngine{
@@ -64,13 +80,14 @@ func (te *TemplateEngine) RenderString(templateName string, data interface{}) (s
 
 // PageData 页面数据结构
 type PageData struct {
-	Title      string
-	User       string
-	Data       interface{}
-	Error      string
-	Success    string
-	Pagination *PaginationData
-	Version    string
+	Title       string
+	User        string
+	Data        interface{}
+	Error       string
+	Success     string
+	Pagination  *PaginationData
+	Version     string
+	CurrentPage string
 }
 
 type PaginationData struct {
@@ -122,4 +139,9 @@ func (pd *PageData) SetPagination(currentPage, totalItems, pageSize int) {
 		NextPage:    currentPage + 1,
 		PrevPage:    currentPage - 1,
 	}
+}
+
+// SetCurrentPage 设置当前页面标识
+func (pd *PageData) SetCurrentPage(page string) {
+	pd.CurrentPage = page
 }

@@ -1,19 +1,16 @@
 {{define "content"}}
-<div x-data="projectDialog()" class="max-w-7xl w-full mx-auto mt-6 px-4 pt-4 sm:px-6 lg:px-8">
+<div x-data="jwtProjectDialog()" class="max-w-7xl w-full mx-auto mt-6 px-4 pt-4 sm:px-6 lg:px-8">
   <div class="sm:flex sm:items-center">
     <div class="sm:flex-auto">
-      <h1 class="text-2xl font-semibold text-gray-900">数据列表</h1>
+      <h1 class="text-2xl font-semibold text-gray-900">令牌列表</h1>
       <p class="mt-2 text-sm text-gray-700">
-        管理您的数据同步项目
+        管理您使用令牌的项目
       </p>
     </div>
-    <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex items-center space-x-3">
-      <a href="/help" class="inline-flex items-center justify-center rounded-md border border-transparent bg-orange-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 sm:w-auto">
-        帮助
-      </a>
+    <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
       <button @click="openCreate()"
         class="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto">
-        创建数据项目
+        创建令牌项目
       </button>
     </div>
   </div>
@@ -58,12 +55,17 @@
                   {{.CreatedAt.Format "2006-01-02 15:04:05"}}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <a href="/project/detail?id={{.ID}}" class="text-blue-600 hover:text-blue-900 mr-4">详情</a>
-                  <button @click="openEdit('{{.ID}}', '{{.Name}}', '{{.Description}}', '{{.Website}}')" type="button"
-                    class="text-blue-600 hover:text-blue-900 mr-4">编辑</button>
-                  <form action="/project/delete" method="POST" class="inline">
+                  <a href="/jwt/detail?id={{.ID}}" class="text-blue-600 hover:text-blue-900 mr-4">详情</a>
+                  <button @click="openEditFromData($event.target)" type="button"
+                    class="text-blue-600 hover:text-blue-900 mr-4"
+                    data-id="{{.ID}}"
+                    data-name="{{.Name}}"
+                    data-description="{{.Description}}"
+                    data-public-key="{{.PublicKey}}"
+                    data-private-key="{{.PrivateKey}}">编辑</button>
+                  <form action="/jwt/project/delete" method="POST" class="inline">
                     <input type="hidden" name="id" value="{{.ID}}">
-                    <button type="submit" onclick="return confirm('确定要删除这个项目吗？')"
+                    <button type="submit" onclick="return confirm('确定要删除这个JWT项目吗？相关的所有令牌也会被删除。')"
                       class="text-red-600 hover:text-red-900">删除</button>
                   </form>
                 </td>
@@ -76,23 +78,15 @@
     </div>
   </div>
 
-  <!-- 创建项目 Dialog -->
+  <!-- 创建JWT项目 Dialog -->
   <div x-show="showCreate" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30"
     style="display: none;">
-    <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-5">
-      <h3 class="text-lg leading-6 font-medium text-gray-900 mb-6">创建新数据项目</h3>
-      <form action="/project/create" method="POST">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl p-5 max-h-[90vh] overflow-y-auto">
+      <h3 class="text-lg leading-6 font-medium text-gray-900 mb-6">创建新令牌</h3>
+      <form action="/jwt/project/create" method="POST">
         <div class="space-y-6">
           <div>
-            <label for="id" class="block text-sm font-medium text-gray-700">项目ID</label>
-            <div class="mt-1">
-              <input type="text" name="id" id="id"
-                class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2"
-                placeholder="请输入项目ID（可选，不填则自动生成）">
-            </div>
-          </div>
-          <div>
-            <label for="name" class="block text-sm font-medium text-gray-700">项目名称</label>
+            <label for="name" class="block text-sm font-medium text-gray-700">名称</label>
             <div class="mt-1">
               <input type="text" name="name" id="name" required
                 class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2"
@@ -100,7 +94,7 @@
             </div>
           </div>
           <div>
-            <label for="description" class="block text-sm font-medium text-gray-700">项目描述</label>
+            <label for="description" class="block text-sm font-medium text-gray-700">描述</label>
             <div class="mt-1">
               <textarea name="description" id="description" rows="3"
                 class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2"
@@ -108,12 +102,25 @@
             </div>
           </div>
           <div>
-            <label for="website" class="block text-sm font-medium text-gray-700">服务地址</label>
+            <label for="public_key" class="block text-sm font-medium text-gray-700">公钥</label>
             <div class="mt-1">
-              <input type="text" name="website" id="website"
-                class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2"
-                placeholder="请输入服务地址（可选）">
+              <textarea name="public_key" id="public_key" rows="6"
+                class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2 font-mono text-xs"
+                placeholder="请输入RSA公钥（PEM格式），留空则自动生成"></textarea>
             </div>
+          </div>
+          <div>
+            <label for="private_key" class="block text-sm font-medium text-gray-700">私钥</label>
+            <div class="mt-1">
+              <textarea name="private_key" id="private_key" rows="8"
+                class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2 font-mono text-xs"
+                placeholder="请输入RSA私钥（PEM格式），留空则自动生成"></textarea>
+            </div>
+          </div>
+          <div class="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+            <p class="text-sm text-yellow-800">
+              <strong>注意：</strong>请妥善保管私钥，不要泄露给他人。公钥可以安全地分享给需要验证令牌的客户端。
+            </p>
           </div>
           <div class="flex justify-end space-x-3">
             <button type="button" @click="closeCreate()"
@@ -130,12 +137,12 @@
     </div>
   </div>
 
-  <!-- 编辑项目 Dialog -->
+  <!-- 编辑JWT项目 Dialog -->
   <div x-show="showEdit" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30"
     style="display: none;">
-    <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-5">
-      <h3 class="text-lg leading-6 font-medium text-gray-900 mb-6">编辑项目</h3>
-      <form action="/project/update" method="POST">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl p-5 max-h-[90vh] overflow-y-auto">
+      <h3 class="text-lg leading-6 font-medium text-gray-900 mb-6">编辑JWT项目</h3>
+      <form action="/jwt/project/update" method="POST">
         <input type="hidden" name="id" :value="editId">
         <div class="space-y-6">
           <div>
@@ -155,11 +162,19 @@
             </div>
           </div>
           <div>
-            <label for="edit_website" class="block text-sm font-medium text-gray-700">服务地址</label>
+            <label for="edit_public_key" class="block text-sm font-medium text-gray-700">公钥</label>
             <div class="mt-1">
-              <input type="text" name="website" id="edit_website" x-model="editWebsite"
-                class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2"
-                placeholder="请输入服务地址（可选）">
+              <textarea name="public_key" id="edit_public_key" rows="6" required x-model="editPublicKey"
+                class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2 font-mono text-xs"
+                placeholder="请输入RSA公钥（PEM格式）"></textarea>
+            </div>
+          </div>
+          <div>
+            <label for="edit_private_key" class="block text-sm font-medium text-gray-700">私钥</label>
+            <div class="mt-1">
+              <textarea name="private_key" id="edit_private_key" rows="8" required x-model="editPrivateKey"
+                class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 pl-2 font-mono text-xs"
+                placeholder="请输入RSA私钥（PEM格式）"></textarea>
             </div>
           </div>
           <div class="flex justify-end space-x-3">
@@ -176,46 +191,42 @@
       </form>
     </div>
   </div>
-
-  <!-- 分页 -->
-  {{if .Pagination}}
-  <div class="mt-2 p-2 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-    <div class="text-gray-600 text-sm mb-2 sm:mb-0">
-      <span class="font-medium">{{.Pagination.CurrentPage}}</span> of <span
-        class="font-medium">{{.Pagination.TotalPages}}</span> pages,
-      <span class="font-medium">{{.Pagination.TotalItems}}</span> items
-    </div>
-    <div>
-      {{if .Pagination.HasPrev}}
-      <a href="?page={{.Pagination.PrevPage}}" class="px-3 py-1 rounded mr-2 hover:bg-gray-100">Prev</a>
-      {{end}}
-      {{if .Pagination.HasNext}}
-      <a href="?page={{.Pagination.NextPage}}" class="px-3 py-1 rounded hover:bg-gray-100">Next</a>
-      {{end}}
-    </div>
-  </div>
-  {{end}}
 </div>
+
 <script>
-  function projectDialog() {
+  function jwtProjectDialog() {
     return {
       showCreate: false,
       showEdit: false,
       editId: '',
       editName: '',
       editDescription: '',
-      editWebsite: '',
+      editPublicKey: '',
+      editPrivateKey: '',
       openCreate() {
         this.showCreate = true;
       },
       closeCreate() {
         this.showCreate = false;
       },
-      openEdit(id, name, description, website) {
+      openEdit(id, name, description, publicKey, privateKey) {
         this.editId = id;
         this.editName = name;
         this.editDescription = description;
-        this.editWebsite = website;
+        this.editPublicKey = publicKey;
+        this.editPrivateKey = privateKey;
+        this.showEdit = true;
+      },
+      openEditFromData(button) {
+        if (!button || !button.dataset) {
+          console.error('Button or dataset is undefined:', button);
+          return;
+        }
+        this.editId = button.dataset.id;
+        this.editName = button.dataset.name;
+        this.editDescription = button.dataset.description;
+        this.editPublicKey = button.dataset.publicKey;
+        this.editPrivateKey = button.dataset.privateKey;
         this.showEdit = true;
       },
       closeEdit() {
@@ -224,4 +235,4 @@
     }
   }
 </script>
-{{end}}
+{{end}} 

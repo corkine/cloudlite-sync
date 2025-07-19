@@ -74,3 +74,55 @@ type DownloadRequest struct {
 	Token   string `json:"token"`
 	Version string `json:"version"` // 可选，不提供则下载最新版本
 }
+
+// JWTProject JWT项目模型
+type JWTProject struct {
+	ID          string    `json:"id" db:"id"`
+	Name        string    `json:"name" db:"name"`
+	Description string    `json:"description" db:"description"`
+	PublicKey   string    `json:"public_key" db:"public_key"`
+	PrivateKey  string    `json:"private_key" db:"private_key"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// JWTToken JWT令牌模型
+type JWTToken struct {
+	ID        string    `json:"id" db:"id"`
+	ProjectID string    `json:"project_id" db:"project_id"`
+	Purpose   string    `json:"purpose" db:"purpose"`
+	Username  string    `json:"username" db:"username"`
+	Role      string    `json:"role" db:"role"`
+	Token     string    `json:"token" db:"token"`
+	IsActive  bool      `json:"is_active" db:"is_active"`
+	ExpiresAt time.Time `json:"expires_at" db:"expires_at"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// CreateJWTProjectRequest 创建JWT项目请求
+type CreateJWTProjectRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	PublicKey   string `json:"public_key"`
+	PrivateKey  string `json:"private_key"`
+}
+
+// CreateJWTTokenRequest 创建JWT令牌请求
+type CreateJWTTokenRequest struct {
+	ProjectID string    `json:"project_id"`
+	Purpose   string    `json:"purpose"`
+	Username  string    `json:"username"`
+	Role      string    `json:"role"`
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
+// UpdateJWTTokenRequest 更新JWT令牌请求
+type UpdateJWTTokenRequest struct {
+	ID        string    `json:"id"`
+	Purpose   string    `json:"purpose"`
+	Username  string    `json:"username"`
+	Role      string    `json:"role"`
+	IsActive  bool      `json:"is_active"`
+	ExpiresAt time.Time `json:"expires_at"`
+}
