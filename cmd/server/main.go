@@ -14,6 +14,7 @@ import (
 	"chchma.com/cloudlite-sync/internal/controller"
 	"chchma.com/cloudlite-sync/internal/database"
 	"chchma.com/cloudlite-sync/internal/oss"
+	"chchma.com/cloudlite-sync/internal/session"
 )
 
 func main() {
@@ -35,6 +36,11 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 	defer db.Close()
+
+	// 初始化分享码服务配置
+	shareService := session.GetShareCodeService()
+	shareService.SetExpireSeconds(cfg.ShareCode.ExpireSeconds)
+	log.Printf("Share code expire time set to %d seconds", cfg.ShareCode.ExpireSeconds)
 
 	// 初始化OSS客户端
 	var ossClient *oss.OSSClient

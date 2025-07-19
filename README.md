@@ -1,18 +1,25 @@
 # CloudLiteSync
 
-一个基于 Go 语言开发的 SQLite 数据库备份和恢复系统，支持阿里云OSS存储，提供Web管理界面和API接口。
+一个基于 Go 语言开发的多功能数据管理平台，集成了 SQLite 数据库备份恢复系统和 JWT 令牌管理功能，支持阿里云OSS存储，提供Web管理界面和API接口。
 
 ## 功能特性
 
-- 🔐 管理员登录认证
+### 🔄 SQLite 数据管理
 - 📁 项目管理（创建、编辑、删除）
 - 🔑 凭证管理（生成、激活、停用、删除）
 - 📊 数据库版本管理
 - ☁️ 阿里云OSS文件存储
-- 🌐 Web管理界面（使用TailwindCSS）
 - 🔌 RESTful API接口
 - 📄 分页显示
 - 🔒 基于Token的第三方访问
+
+### 🔐 JWT 令牌管理
+- 🏗️ JWT项目创建和管理
+- 🔑 RSA密钥对生成和管理
+- 🎫 JWT令牌创建和验证
+- 📤 分享码功能（6位数字码，可配置过期时间）
+- 🔍 令牌状态监控和过期管理
+- 📋 令牌信息查看和编辑
 
 ## 技术栈
 
@@ -20,8 +27,9 @@
 - **路由**: Chi Router
 - **数据库**: SQLite
 - **存储**: 阿里云OSS
-- **前端**: HTML + TailwindCSS
+- **前端**: HTML + TailwindCSS + Alpine.js
 - **会话**: Gorilla Sessions
+- **JWT**: golang-jwt/jwt/v5
 
 ## 快速开始
 
@@ -54,6 +62,10 @@ go mod tidy
   "admin": {
     "username": "admin",
     "password": "admin123"
+  },
+  "session_secret": "your-session-secret-here",
+  "share_code": {
+    "expire_seconds": 30
   }
 }
 ```
@@ -76,6 +88,9 @@ export OSS_BUCKET_NAME=your-bucket-name
 # 管理员配置
 export ADMIN_USERNAME=admin
 export ADMIN_PASSWORD=admin123
+
+# 分享码配置
+export SHARE_CODE_EXPIRE_SECONDS=30
 ```
 
 ### 3. 运行服务器
@@ -119,7 +134,9 @@ podman run -it --rm \
 
 ## API接口
 
-### 上传数据库文件
+### SQLite 数据管理 API
+
+#### 上传数据库文件
 
 ```bash
 curl -X POST http://localhost:8080/api/{PROJ_ID} \
@@ -128,7 +145,7 @@ curl -X POST http://localhost:8080/api/{PROJ_ID} \
   -F "database=@/path/to/database.db"
 ```
 
-### 下载数据库文件
+#### 下载数据库文件
 
 ```bash
 # 下载最新版本
@@ -138,46 +155,28 @@ curl -O -J "http://localhost:8080/api/{PROJ_ID}/latest?token=YOUR_TOKEN"
 curl -O -J "http://localhost:8080/api/{PROJ_ID}/{HASH}?token=YOUR_TOKEN"
 ```
 
-## 数据库表结构
+### JWT 令牌分享 API
 
-### projects（项目表）
-- id: 项目ID（8位字母）
-- name: 项目名称
-- description: 项目描述
-- created_at: 创建时间
-- updated_at: 更新时间
+#### 获取分享的令牌
 
-### credentials（凭证表）
-- id: 凭证ID
-- project_id: 项目ID
-- token: 访问令牌
-- is_active: 是否激活
-- created_at: 创建时间
-- updated_at: 更新时间
+```bash
+curl http://localhost:8080/s/{SHARE_CODE}
+```
 
-### database_versions（数据库版本表）
-- id: 版本ID
-- project_id: 项目ID
-- version: 版本号
-- file_hash: 文件哈希
-- file_name: 文件名
-- file_size: 文件大小
-- oss_key: OSS存储键
-- description: 版本描述
-- is_latest: 是否最新版本
-- created_at: 创建时间
-
-## 使用流程
-
-1. **管理员登录**: 使用配置的用户名和密码登录系统
-2. **创建项目**: 在仪表板中创建新项目，系统会生成唯一的项目ID
-3. **生成凭证**: 在项目详情页面为项目生成访问凭证
-4. **第三方使用**: 第三方应用使用凭证通过API上传和下载数据库文件
-5. **版本管理**: 系统自动管理数据库版本，支持下载最新版本或指定版本
+**响应示例**：
+```json
+{
+  "token": "eyJhbGciOiJSUzI1NiIs...",
+  "success": true,
+  "message": "密钥获取成功"
+}
+```
 
 ## 注意事项
 
 - 确保阿里云OSS配置正确，否则文件上传功能将不可用
 - 建议在生产环境中修改默认的管理员密码
 - 定期备份SQLite数据库文件
+- 分享码存储在内存中，服务重启后会丢失
+- JWT私钥请妥善保管，不要泄露给他人
 - 可以根据需要调整分页大小和文件上传限制

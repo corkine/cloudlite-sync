@@ -8,7 +8,9 @@ import (
 
 	"chchma.com/cloudlite-sync/internal/database"
 	"chchma.com/cloudlite-sync/internal/models"
+	"chchma.com/cloudlite-sync/internal/session"
 	"chchma.com/cloudlite-sync/internal/utils"
+	"github.com/go-chi/chi/v5"
 )
 
 type JWTController struct {
@@ -540,4 +542,135 @@ func (c *JWTController) GenerateKeyPair(w http.ResponseWriter, r *http.Request) 
 		"public_key":  publicKeyPEM,
 		"message":     "密钥对生成成功",
 	})
+}
+
+// GenerateShareCode 生成分享码
+func (c *JWTController) GenerateShareCode(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	tokenID := r.FormValue("token_id")
+	if tokenID == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "缺少令牌ID",
+		})
+		return
+	}
+
+	// 获取令牌信息
+	token, err := c.db.GetJWTToken(tokenID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "令牌不存在",
+		})
+		return
+	}
+
+	// 生成分享码
+	shareService := session.GetShareCodeService()
+	code, err := shareService.GenerateShareCode(token.Token)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "生成分享码失败",
+		})
+		return
+	}
+
+	// 获取分享码信息以获取过期时间
+	shareCode, exists := shareService.GetCodeInfo(code)
+	expiresAt := time.Now().Add(30 * time.Second) // 默认值
+	if exists {
+		expiresAt = shareCode.ExpiresAt
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data": map[string]interface{}{
+			"code":       code,
+			"expires_at": expiresAt,
+		},
+		"message": "分享码生成成功",
+	})
+}
+
+// GetShareCodeInfo 获取分享码信息
+func (c *JWTController) GetShareCodeInfo(w http.ResponseWriter, r *http.Request) {
+	code := r.URL.Query().Get("code")
+	if code == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "缺少分享码",
+		})
+		return
+	}
+
+	shareService := session.GetShareCodeService()
+	shareCode, exists := shareService.GetCodeInfo(code)
+	if !exists {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "分享码不存在或已过期",
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"data":    shareCode,
+	})
+}
+
+func (c *JWTController) ShareAPI(w http.ResponseWriter, r *http.Request) {
+	code := chi.URLParam(r, "code")
+
+	if len(code) != 6 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "无效的分享码",
+		})
+		return
+	}
+
+	// 获取分享码信息
+	shareService := session.GetShareCodeService()
+	tokenString, exists := shareService.GetTokenByCode(code)
+	if !exists {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "分享码不存在",
+		})
+		return
+	}
+
+	// 返回JSON响应
+	w.Header().Set("Content-Type", "application/json")
+
+	response := map[string]interface{}{
+		"token":   tokenString,
+		"success": true,
+		"message": "密钥获取成功",
+	}
+
+	json.NewEncoder(w).Encode(response)
 }

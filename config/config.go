@@ -3,13 +3,15 @@ package config
 import (
 	"encoding/json"
 	"os"
+	"strconv"
 )
 
 type Config struct {
-	Server        ServerConfig `json:"server"`
-	OSS           OSSConfig    `json:"oss"`
-	Admin         AdminConfig  `json:"admin"`
-	SessionSecret string       `json:"session_secret"`
+	Server        ServerConfig    `json:"server"`
+	OSS           OSSConfig       `json:"oss"`
+	Admin         AdminConfig     `json:"admin"`
+	SessionSecret string          `json:"session_secret"`
+	ShareCode     ShareCodeConfig `json:"share_code"`
 }
 
 type ServerConfig struct {
@@ -27,6 +29,10 @@ type OSSConfig struct {
 type AdminConfig struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+type ShareCodeConfig struct {
+	ExpireSeconds int `json:"expire_seconds"`
 }
 
 func Load() *Config {
@@ -56,6 +62,9 @@ func loadFromFile() *Config {
 			Password: "admin123",
 		},
 		SessionSecret: "",
+		ShareCode: ShareCodeConfig{
+			ExpireSeconds: 3600, // 默认过期时间为1小时
+		},
 	}
 
 	data, err := os.ReadFile("config.json")
@@ -101,5 +110,11 @@ func overrideWithEnv(config *Config) {
 	}
 	if value := os.Getenv("ADMIN_PASSWORD"); value != "" {
 		config.Admin.Password = value
+	}
+	// 分享码配置
+	if value := os.Getenv("SHARE_CODE_EXPIRE_SECONDS"); value != "" {
+		if expireSeconds, err := strconv.Atoi(value); err == nil {
+			config.ShareCode.ExpireSeconds = expireSeconds
+		}
 	}
 }

@@ -41,6 +41,9 @@ func NewRouter(cfg *config.Config, db *database.DB, ossClient *oss.OSSClient) *c
 
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
+	// 分享路由（无需认证）
+	r.Get("/s/{code}", handler.jwtCtrl.ShareAPI)
+
 	// 认证路由
 	r.Get("/login", handler.LoginPage)
 	r.Post("/login", handler.Login)
@@ -52,39 +55,52 @@ func NewRouter(cfg *config.Config, db *database.DB, ossClient *oss.OSSClient) *c
 
 		// 项目管理
 		r.Get("/", handler.Dashboard)
-		r.Post("/project/create", handler.CreateProject)
-		r.Post("/project/update", handler.UpdateProject)
-		r.Post("/project/delete", handler.DeleteProject)
-		r.Get("/project/detail", handler.ProjectDetail)
-		r.Post("/project/upload_version", handler.UploadDatabaseVersion)
-		r.Post("/project/delete_version", handler.DeleteDatabaseVersion)
-		r.Get("/project/download", handler.ProjectDownload)
 		r.Get("/help", handler.HelpPage)
 
+		r.Route("/project", func(r chi.Router) {
+			r.Post("/create", handler.CreateProject)
+			r.Post("/update", handler.UpdateProject)
+			r.Post("/delete", handler.DeleteProject)
+			r.Get("/detail", handler.ProjectDetail)
+			r.Post("/upload_version", handler.UploadDatabaseVersion)
+			r.Post("/delete_version", handler.DeleteDatabaseVersion)
+			r.Get("/download", handler.ProjectDownload)
+		})
+
 		// 凭证管理
-		r.Post("/credential/create", handler.CreateCredential)
-		r.Post("/credential/delete", handler.DeleteCredential)
-		r.Post("/credential/activate", handler.ActivateCredential)
-		r.Post("/credential/deactivate", handler.DeactivateCredential)
+		r.Route("/credential", func(r chi.Router) {
+			r.Post("/create", handler.CreateCredential)
+			r.Post("/delete", handler.DeleteCredential)
+			r.Post("/activate", handler.ActivateCredential)
+			r.Post("/deactivate", handler.DeactivateCredential)
+		})
 
 		// JWT项目管理
-		r.Get("/jwt", handler.JWTDashboard)
-		r.Get("/jwt/detail", handler.JWTProjectDetail)
-		r.Post("/jwt/project/create", handler.jwtCtrl.CreateJWTProject)
-		r.Get("/jwt/project/get", handler.jwtCtrl.GetJWTProject)
-		r.Get("/jwt/project/list", handler.jwtCtrl.ListJWTProjects)
-		r.Post("/jwt/project/update", handler.jwtCtrl.UpdateJWTProject)
-		r.Post("/jwt/project/delete", handler.jwtCtrl.DeleteJWTProject)
-		r.Post("/jwt/key/generate", handler.jwtCtrl.GenerateKeyPair)
+		r.Route("/jwt", func(r chi.Router) {
+			r.Get("/", handler.JWTDashboard)
+			r.Get("/detail", handler.JWTProjectDetail)
+			r.Post("/key/generate", handler.jwtCtrl.GenerateKeyPair)
 
-		// JWT令牌管理
-		r.Post("/jwt/token/create", handler.jwtCtrl.CreateJWTToken)
-		r.Get("/jwt/token/get", handler.jwtCtrl.GetJWTToken)
-		r.Get("/jwt/token/list", handler.jwtCtrl.ListJWTTokens)
-		r.Post("/jwt/token/update", handler.jwtCtrl.UpdateJWTToken)
-		r.Post("/jwt/token/delete", handler.jwtCtrl.DeleteJWTToken)
-		r.Post("/jwt/token/delete_expired", handler.jwtCtrl.DeleteExpiredJWTTokens)
-		r.Get("/jwt/token/verify", handler.jwtCtrl.VerifyJWTToken)
+			r.Route("/project", func(r chi.Router) {
+				r.Post("/create", handler.jwtCtrl.CreateJWTProject)
+				r.Get("/get", handler.jwtCtrl.GetJWTProject)
+				r.Get("/list", handler.jwtCtrl.ListJWTProjects)
+				r.Post("/update", handler.jwtCtrl.UpdateJWTProject)
+				r.Post("/delete", handler.jwtCtrl.DeleteJWTProject)
+			})
+
+			r.Route("/token", func(r chi.Router) {
+				r.Post("/create", handler.jwtCtrl.CreateJWTToken)
+				r.Get("/get", handler.jwtCtrl.GetJWTToken)
+				r.Get("/list", handler.jwtCtrl.ListJWTTokens)
+				r.Post("/update", handler.jwtCtrl.UpdateJWTToken)
+				r.Post("/delete", handler.jwtCtrl.DeleteJWTToken)
+				r.Post("/delete_expired", handler.jwtCtrl.DeleteExpiredJWTTokens)
+				r.Get("/verify", handler.jwtCtrl.VerifyJWTToken)
+				r.Post("/share", handler.jwtCtrl.GenerateShareCode)
+				r.Get("/share/info", handler.jwtCtrl.GetShareCodeInfo)
+			})
+		})
 	})
 
 	// API路由（第三方访问）
