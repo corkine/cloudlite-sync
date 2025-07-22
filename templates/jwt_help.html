@@ -1,0 +1,125 @@
+{{define "content"}}
+<div class="max-w-7xl w-full mx-auto px-4 py-8">
+  <h1 class="text-2xl font-bold mb-2">令牌集成帮助</h1>
+  <p class="text-gray-700 mt-4 mb-4">
+    CloudLiteSync 支持基于 JWT（JSON Web Token）的令牌鉴权机制，适用于微服务、Serverless、API 网关等多种场景。每个令牌项目拥有独立的 RSA 公私钥对，支持灵活的权限与用途隔离。
+  </p>
+  <p class="mt-8 mb-4 text-gray-700">
+    下面提供了 API 说明和 Go 语言集成 CloudLiteSync JWT 的示例。
+  </p>
+  <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-4 mb-6" role="alert">
+    <h2 class="text-xl font-semibold mb-2">API 说明</h2>
+    <ul class="list-none pl-0 ">
+      <li>
+        <b>在线校验：</b>
+        <code>GET /s/{quick_key}</code>，从返回的 JSON 的 token 字段获取 JWT Token，然后执行离线校验。
+      </li>
+      <li>
+        <b>离线校验：</b>
+        从 JWT Token 中解析 username, role 和 purpose，验证 purpose 是否和本项目匹配即可。
+      </li>
+    </ul>
+  </div>
+
+  <div class="mb-8">
+    <h2 class="text-xl font-semibold mt-8 mb-4">Go 语言集成示例</h2>
+    <pre class="bg-gray-100 rounded p-4 overflow-x-auto text-xs"><code>package cls
+
+import (
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/json"
+	"encoding/pem"
+	"fmt"
+	"io"
+	"net/http"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+)
+
+type CLSService struct {
+	PublicKey    *rsa.PublicKey
+	MatchPurpose string
+	RemoteServer string
+}
+
+func NewCLSService(publicKeyPEM, matchPurpose, remoteServer string) *CLSService {
+	block, _ := pem.Decode([]byte(publicKeyPEM))
+	if block == nil {
+		panic("failed to parse PEM block")
+	}
+	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		panic(err)
+	}
+	return &CLSService{
+		PublicKey:    pub.(*rsa.PublicKey),
+		MatchPurpose: matchPurpose,
+		RemoteServer: remoteServer,
+	}
+}
+
+type JWTClaims struct {
+	Username string `json:"username"`
+	Role     string `json:"role"`
+	Purpose  string `json:"purpose"`
+	jwt.RegisteredClaims
+}
+
+// / Auth Using JWT Token, return User
+func (s *CLSService) JwtAuth(tokenString string) (*JWTClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+		// Verify signing method
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return s.PublicKey, nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse token: %w", err)
+	}
+
+	if claims, ok := token.Claims.(*JWTClaims); ok && token.Valid {
+		if claims.Purpose != s.MatchPurpose {
+			return nil, fmt.Errorf("purpose mismatch")
+		}
+		if claims.ExpiresAt.Before(time.Now()) {
+			return nil, fmt.Errorf("token expired")
+		}
+		return claims, nil
+	}
+
+	return nil, fmt.Errorf("invalid token")
+}
+
+// / Auth Using Remote Server by quickKey, return JWT Token
+func (s *CLSService) TokenAuth(key string) (*JWTClaims, error) {
+	url := fmt.Sprintf("%s/s/%s", s.RemoteServer, key)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("remote server returned status %d", resp.StatusCode)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var tokenClaims struct {
+		Token string `json:"token"`
+	}
+	err = json.Unmarshal(body, &tokenClaims)
+	if err != nil || tokenClaims.Token == "" {
+		return nil, err
+	}
+	return s.JwtAuth(tokenClaims.Token)
+}
+</code></pre>
+    <div class="mt-4 text-gray-500 text-xs">如需更多语言示例或有其他问题，请联系维护者。</div>
+  </div>
+</div>
+{{end}}

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -24,6 +25,7 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 
 	projects, total, err := h.db.ListProjects(page, pageSize)
 	if err != nil {
+		log.Println("Failed to get projects: ", err)
 		http.Error(w, "Failed to get projects", http.StatusInternalServerError)
 		return
 	}
@@ -406,9 +408,15 @@ func (h *Handler) ProjectDownload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) HelpPage(w http.ResponseWriter, r *http.Request) {
-	data := template.NewPageData("帮助", nil)
+	data := template.NewPageData("数据集成帮助", nil)
 	data.SetUser(session.GetUsername(r))
 	h.tmpl.Render(w, "help.html", data)
+}
+
+func (h *Handler) JWTHelpPage(w http.ResponseWriter, r *http.Request) {
+	data := template.NewPageData("令牌集成帮助", nil)
+	data.SetUser(session.GetUsername(r))
+	h.tmpl.Render(w, "jwt_help.html", data)
 }
 
 // JWTDashboard JWT管理仪表板

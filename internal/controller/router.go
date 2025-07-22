@@ -56,6 +56,7 @@ func NewRouter(cfg *config.Config, db *database.DB, ossClient *oss.OSSClient) *c
 		// 项目管理
 		r.Get("/", handler.Dashboard)
 		r.Get("/help", handler.HelpPage)
+		r.Get("/jwt_help", handler.JWTHelpPage)
 
 		r.Route("/project", func(r chi.Router) {
 			r.Post("/create", handler.CreateProject)
